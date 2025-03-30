@@ -3,12 +3,13 @@ import { Check, X } from 'lucide-react';
 import { FamilyMember } from '../types';
 
 interface TipsSummaryProps {
+  title: string;
   tippers: FamilyMember[];
   matches: any[];
   roundTips: any[];
 }
 
-export function TipsSummary({ tippers, matches, roundTips }: TipsSummaryProps) {
+export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryProps) {
   const getTipForMatch = (tipperId: string, matchId: string) => {
     return roundTips.find(
       tip => tip.tipper_id === tipperId && tip.match_id === matchId
@@ -17,7 +18,7 @@ export function TipsSummary({ tippers, matches, roundTips }: TipsSummaryProps) {
 
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-4">
-      <h3 className="text-lg font-semibold mb-3">Round Tips</h3>
+      <h3 className="text-lg font-semibold mb-3">{title}</h3>
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

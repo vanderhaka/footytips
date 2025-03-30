@@ -1,10 +1,10 @@
 import React from 'react';
-import { Users, Calendar, History, Trophy, LogOut } from 'lucide-react';
+import { Users, Calendar, History, Trophy, LogOut, Edit3 } from 'lucide-react';
 import { signOut } from '../lib/auth';
 
 interface NavigationProps {
-  currentView: 'tips' | 'season' | 'past' | 'admin';
-  onViewChange: (view: 'tips' | 'season' | 'past' | 'admin') => void;
+  currentView: 'tips' | 'season' | 'past' | 'admin' | 'enter_tips';
+  onViewChange: (view: 'tips' | 'season' | 'past' | 'admin' | 'enter_tips') => void;
   isAuthenticated: boolean;
 }
 
@@ -35,8 +35,21 @@ export function Navigation({ currentView, onViewChange, isAuthenticated }: Navig
               }`}
             >
               <Users size={18} />
-              Current Round
+              Overview
             </button>
+            {isAuthenticated && (
+              <button
+                onClick={() => onViewChange('enter_tips')}
+                className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                  currentView === 'enter_tips'
+                    ? 'bg-blue-50 text-blue-600'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Edit3 size={18} />
+                Enter Tips
+              </button>
+            )}
             {isAuthenticated && (
               <button
                 onClick={() => onViewChange('past')}
