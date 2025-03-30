@@ -243,22 +243,3 @@ export const calculatePoints = async () => {
   // Keep the function to maintain API compatibility
   return {};
 };
-
-export const fetchRoundScores = async () => {
-  const { data, error } = await supabase
-    .from('tips')
-    .select('*')
-    .order('round');
-
-  if (error) {
-    console.error('Error fetching round scores:', error);
-    return [];
-  }
-  
-  // Log the structure of the first item if data exists
-  if (data && data.length > 0) {
-    console.log('Sample fetched tip data structure:', data[0]);
-  }
-  
-  return data || []; 
-};
