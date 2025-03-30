@@ -216,10 +216,10 @@ function App() {
           <>
             {/* Tab Navigation */}
             <div className="mb-6 border-b border-gray-200">
-              <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+              <nav className="-mb-px flex flex-wrap space-x-4 md:space-x-6" aria-label="Tabs">
                 <button
                   onClick={() => setActiveOverviewTab('leaderboard')}
-                  className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
+                  className={`whitespace-nowrap py-2 md:py-3 px-1 border-b-2 font-medium text-sm ${
                     activeOverviewTab === 'leaderboard'
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -229,7 +229,7 @@ function App() {
                 </button>
                 <button
                   onClick={() => setActiveOverviewTab('current')}
-                  className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
+                  className={`whitespace-nowrap py-2 md:py-3 px-1 border-b-2 font-medium text-sm ${
                     activeOverviewTab === 'current'
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -240,7 +240,7 @@ function App() {
                 {/* Upcoming Fixture Tab */}
                 <button
                   onClick={() => setActiveOverviewTab('fixture')}
-                  className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
+                  className={`whitespace-nowrap py-2 md:py-3 px-1 border-b-2 font-medium text-sm ${
                     activeOverviewTab === 'fixture'
                       ? 'border-blue-500 text-blue-600'
                       : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -248,11 +248,11 @@ function App() {
                 >
                   Upcoming Matches
                 </button>
-                {/* Only show Previous Round tab if it exists */}
+                {/* Previous Round Tab */}
                 {!loadingPrevious && previousRound && previousRoundMatches.length > 0 && (
                   <button
                     onClick={() => setActiveOverviewTab('previous')}
-                    className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
+                    className={`whitespace-nowrap py-2 md:py-3 px-1 border-b-2 font-medium text-sm ${
                       activeOverviewTab === 'previous'
                         ? 'border-blue-500 text-blue-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -289,11 +289,11 @@ function App() {
 
             {activeOverviewTab === 'fixture' && (
               <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div className="bg-blue-50 px-6 py-4 border-b">
-                  <h2 className="text-xl font-bold text-blue-900">Round {currentRound} Fixture</h2>
+                <div className="bg-blue-50 px-4 md:px-6 py-3 md:py-4 border-b">
+                  <h2 className="text-lg md:text-xl font-bold text-blue-900">Round {currentRound} Fixture</h2>
                 </div>
                 {/* Form Guide Legend */}
-                <div className="px-6 pt-3 pb-2 text-xs text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+                <div className="px-4 md:px-6 pt-3 pb-2 text-xs text-gray-600 flex flex-wrap gap-x-3 md:gap-x-4 gap-y-1">
                   <span className="font-semibold self-center">Key:</span>
                   {/* Home Win */}
                   <span className="flex items-center gap-1">
@@ -326,7 +326,7 @@ function App() {
                 </div>
 
                 {currentRoundMatches.length === 0 ? (
-                  <div className="px-6 py-8 text-center text-gray-500">No matches found for this round.</div>
+                  <div className="px-4 md:px-6 py-8 text-center text-gray-500">No matches found for this round.</div>
                 ) : (
                   <div className="divide-y">
                     {currentRoundMatches.map(match => {
@@ -334,10 +334,10 @@ function App() {
                       const awayForm = getTeamForm(match.away_team.name);
 
                       return (
-                        <div key={match.id} className="px-6 py-4">
+                        <div key={match.id} className="px-4 md:px-6 py-3 md:py-4">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex-1 text-left">
-                              <div className="text-lg font-semibold text-gray-900">
+                              <div className="text-base md:text-lg font-semibold text-gray-900">
                                 {match.home_team.name}
                               </div>
                               <div className="flex gap-1.5 mt-1">
@@ -365,7 +365,7 @@ function App() {
                             <div className="text-sm text-gray-500 mx-2 pt-1">vs</div>
 
                             <div className="flex-1 text-right">
-                              <div className="text-lg font-semibold text-gray-900">
+                              <div className="text-base md:text-lg font-semibold text-gray-900">
                                 {match.away_team.name}
                               </div>
                               <div className="flex gap-1.5 mt-1 justify-end">
@@ -390,7 +390,7 @@ function App() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex flex-col items-center text-gray-600 text-sm mt-2">
+                          <div className="flex flex-col items-center text-gray-600 text-xs md:text-sm mt-2">
                             {match.match_date ? (
                               <div className="flex items-center gap-2">
                                 <Calendar size={16} />

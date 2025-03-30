@@ -95,12 +95,12 @@ export function Leaderboard({ tippers, matches }: LeaderboardProps) {
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-gray-50">
-              <th className="p-2 text-left font-semibold text-gray-700 sticky left-0 bg-gray-50 z-10">Rank</th>
-              <th className="p-2 text-left font-semibold text-gray-700 sticky left-10 bg-gray-50 z-10">Name</th>
+              <th className="p-2 text-left font-semibold text-gray-700 sticky left-0 bg-gray-50 z-10 text-xs md:text-sm">Rank</th>
+              <th className="p-2 text-left font-semibold text-gray-700 sticky left-10 bg-gray-50 z-10 text-xs md:text-sm">Name</th>
               {rounds.map(round => (
-                <th key={round} className="p-2 text-center font-semibold text-gray-700">R{round}</th>
+                <th key={round} className="p-2 text-center font-semibold text-gray-700 hidden md:table-cell">R{round}</th>
               ))}
-              <th className="p-2 text-right font-semibold text-gray-700 sticky right-0 bg-gray-50 z-10">Total</th>
+              <th className="p-2 text-right font-semibold text-gray-700 sticky right-0 bg-gray-50 z-10 text-xs md:text-sm">Total</th>
             </tr>
           </thead>
           <tbody>
@@ -110,7 +110,7 @@ export function Leaderboard({ tippers, matches }: LeaderboardProps) {
               return (
                 <tr key={member.id} className="border-t">
                   <td className="p-2 font-medium sticky left-0 bg-white z-10">
-                    <span className={`font-semibold ${
+                    <span className={`font-semibold text-xs md:text-sm ${
                       rank === 1 ? 'text-yellow-500' :
                       rank === 2 ? 'text-gray-500' :
                       rank === 3 ? 'text-amber-700' : 'text-gray-700'
@@ -118,18 +118,18 @@ export function Leaderboard({ tippers, matches }: LeaderboardProps) {
                       #{rank}
                     </span>
                   </td>
-                  <td className="p-2 sticky left-10 bg-white z-10">{member.name}</td>
+                  <td className="p-2 sticky left-10 bg-white z-10 text-xs md:text-sm">{member.name}</td>
                   {rounds.map(round => {
                     const score = memberScores[round];
                     const totalGames = matchesPerRound[round] || 0;
                     const displayScore = score !== undefined ? `${score} / ${totalGames}` : '-';
                     return (
-                      <td key={round} className="p-2 text-center text-gray-600">
+                      <td key={round} className="p-2 text-center text-gray-600 hidden md:table-cell text-xs">
                         {displayScore}
                       </td>
                     );
                   })}
-                  <td className="p-2 text-right font-bold text-blue-600 sticky right-0 bg-white z-10">
+                  <td className="p-2 text-right font-bold text-blue-600 sticky right-0 bg-white z-10 text-xs md:text-sm">
                     {member.total_points}
                   </td>
                 </tr>
