@@ -292,6 +292,39 @@ function App() {
                 <div className="bg-blue-50 px-6 py-4 border-b">
                   <h2 className="text-xl font-bold text-blue-900">Round {currentRound} Fixture</h2>
                 </div>
+                {/* Form Guide Legend */}
+                <div className="px-6 pt-3 pb-2 text-xs text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+                  <span className="font-semibold self-center">Key:</span>
+                  {/* Home Win */}
+                  <span className="flex items-center gap-1">
+                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-full border-green-500">
+                      <span className="text-xs font-bold leading-none text-green-600">W</span>
+                    </div>
+                     = Home Win
+                  </span>
+                  {/* Home Loss */}
+                  <span className="flex items-center gap-1">
+                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-full border-red-500">
+                      <span className="text-xs font-bold leading-none text-red-600">L</span>
+                    </div>
+                     = Home Loss
+                  </span>
+                  {/* Away Win */}
+                  <span className="flex items-center gap-1">
+                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-sm border-green-500">
+                      <span className="text-xs font-bold leading-none text-green-600">W</span>
+                    </div>
+                     = Away Win
+                  </span>
+                  {/* Away Loss */}
+                  <span className="flex items-center gap-1">
+                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-sm border-red-500">
+                      <span className="text-xs font-bold leading-none text-red-600">L</span>
+                    </div>
+                     = Away Loss
+                  </span>
+                </div>
+
                 {currentRoundMatches.length === 0 ? (
                   <div className="px-6 py-8 text-center text-gray-500">No matches found for this round.</div>
                 ) : (
@@ -313,7 +346,7 @@ function App() {
                                     <div key={`${match.id}-h-${form.id}`} className="flex flex-col items-center">
                                       <span className="text-xs text-gray-400 leading-none mb-0.5">R{form.round}</span>
                                       <div 
-                                        className={`w-5 h-5 flex items-center justify-center ${form.location === 'home' ? 'rounded-full' : 'rounded-sm'} ${form.win ? 'bg-green-100' : 'bg-red-100'}`}
+                                        className={`w-5 h-5 flex items-center justify-center border-2 ${form.location === 'home' ? 'rounded-full' : 'rounded-sm'} ${form.win ? 'border-green-500' : 'border-red-500'}`}
                                       >
                                         <span 
                                           className={`text-xs font-bold leading-none ${form.win ? 'text-green-600' : 'text-red-600'}`}
@@ -341,7 +374,7 @@ function App() {
                                     <div key={`${match.id}-a-${form.id}`} className="flex flex-col items-center">
                                       <span className="text-xs text-gray-400 leading-none mb-0.5">R{form.round}</span>
                                       <div 
-                                        className={`w-5 h-5 flex items-center justify-center ${form.location === 'home' ? 'rounded-full' : 'rounded-sm'} ${form.win ? 'bg-green-100' : 'bg-red-100'}`}
+                                        className={`w-5 h-5 flex items-center justify-center border-2 ${form.location === 'home' ? 'rounded-full' : 'rounded-sm'} ${form.win ? 'border-green-500' : 'border-red-500'}`}
                                       >
                                         <span 
                                           className={`text-xs font-bold leading-none ${form.win ? 'text-green-600' : 'text-red-600'}`}
