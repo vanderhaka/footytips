@@ -215,53 +215,76 @@ function App() {
         ) : (
           <>
             {/* Tab Navigation */}
-            <div className="mb-6 border-b border-gray-200">
-              <nav className="-mb-px flex flex-wrap space-x-4 md:space-x-6" aria-label="Tabs">
-                <button
-                  onClick={() => setActiveOverviewTab('leaderboard')}
-                  className={`whitespace-nowrap py-2 md:py-3 px-1 border-b-2 font-medium text-sm ${
-                    activeOverviewTab === 'leaderboard'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Leaderboard
-                </button>
-                <button
-                  onClick={() => setActiveOverviewTab('current')}
-                  className={`whitespace-nowrap py-2 md:py-3 px-1 border-b-2 font-medium text-sm ${
-                    activeOverviewTab === 'current'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Round {currentRound} Tips
-                </button>
-                {/* Upcoming Fixture Tab */}
-                <button
-                  onClick={() => setActiveOverviewTab('fixture')}
-                  className={`whitespace-nowrap py-2 md:py-3 px-1 border-b-2 font-medium text-sm ${
-                    activeOverviewTab === 'fixture'
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  Upcoming Matches
-                </button>
-                {/* Previous Round Tab */}
-                {!loadingPrevious && previousRound && previousRoundMatches.length > 0 && (
+            <div className="mb-6">
+              {/* Desktop Tabs (md and up) */}
+              <div className="hidden md:block border-b border-gray-200">
+                <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                  {/* Leaderboard Button */}
                   <button
-                    onClick={() => setActiveOverviewTab('previous')}
-                    className={`whitespace-nowrap py-2 md:py-3 px-1 border-b-2 font-medium text-sm ${
-                      activeOverviewTab === 'previous'
+                    onClick={() => setActiveOverviewTab('leaderboard')}
+                    className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
+                      activeOverviewTab === 'leaderboard'
                         ? 'border-blue-500 text-blue-600'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    Round {previousRound} Results
+                    Leaderboard
                   </button>
-                )}
-              </nav>
+                  {/* Current Tips Button */}
+                  <button
+                    onClick={() => setActiveOverviewTab('current')}
+                    className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
+                      activeOverviewTab === 'current'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Round {currentRound} Tips
+                  </button>
+                  {/* Upcoming Fixture Button */}
+                  <button
+                    onClick={() => setActiveOverviewTab('fixture')}
+                    className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
+                      activeOverviewTab === 'fixture'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    Upcoming Matches
+                  </button>
+                  {/* Previous Round Button */}
+                  {!loadingPrevious && previousRound && previousRoundMatches.length > 0 && (
+                    <button
+                      onClick={() => setActiveOverviewTab('previous')}
+                      className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
+                        activeOverviewTab === 'previous'
+                          ? 'border-blue-500 text-blue-600'
+                          : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      }`}
+                    >
+                      Round {previousRound} Results
+                    </button>
+                  )}
+                </nav>
+              </div>
+              {/* Mobile Dropdown (screens smaller than md) */}
+              <div className="block md:hidden">
+                <label htmlFor="overview-tabs" className="sr-only">Select a tab</label>
+                <select
+                  id="overview-tabs"
+                  name="overview-tabs"
+                  className="block w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                  value={activeOverviewTab}
+                  onChange={(e) => setActiveOverviewTab(e.target.value as 'leaderboard' | 'current' | 'previous' | 'fixture')}
+                >
+                  <option value="leaderboard">Leaderboard</option>
+                  <option value="current">Round {currentRound} Tips</option>
+                  <option value="fixture">Upcoming Matches</option>
+                  {!loadingPrevious && previousRound && previousRoundMatches.length > 0 && (
+                    <option value="previous">Round {previousRound} Results</option>
+                  )}
+                </select>
+              </div>
             </div>
 
             {/* Conditional Content based on active tab */}

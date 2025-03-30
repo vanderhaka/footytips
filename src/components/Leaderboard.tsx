@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Trophy } from 'lucide-react';
+import { Trophy, X } from 'lucide-react';
 import { FamilyMember } from '../types';
 import { fetchRoundScores } from '../data'; // Import the new function
 
@@ -30,6 +30,11 @@ export function Leaderboard({ tippers, matches }: LeaderboardProps) {
   const [roundScores, setRoundScores] = useState<ProcessedScores>({});
   const [rounds, setRounds] = useState<number[]>([]);
   const [loadingScores, setLoadingScores] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTipperData, setSelectedTipperData] = useState<{ 
+    tipper: FamilyMember | null; 
+    scores: { [round: number]: number } 
+  } | null>(null);
 
   useEffect(() => {
     // Sort members by points and calculate ranks
@@ -82,8 +87,21 @@ export function Leaderboard({ tippers, matches }: LeaderboardProps) {
     return acc;
   }, {} as Record<number, number>);
 
+  const handleTipperClick = (tipper: FamilyMember) => {
+    setSelectedTipperData({ 
+      tipper: tipper,
+      scores: roundScores[tipper.id] || {}
+    });
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedTipperData(null);
+  };
+
   return (
-    <div className="w-full p-4 bg-white rounded-lg shadow-lg overflow-x-auto">
+    <div className="w-full p-4 bg-white rounded-lg shadow-lg overflow-x-auto relative">
       <div className="flex items-center gap-2 mb-4">
         <Trophy className="text-yellow-500" size={20} />
         <h2 className="text-xl font-bold text-gray-800">Leaderboard</h2>
@@ -118,7 +136,12 @@ export function Leaderboard({ tippers, matches }: LeaderboardProps) {
                       #{rank}
                     </span>
                   </td>
-                  <td className="p-2 sticky left-10 bg-white z-10 text-xs md:text-sm">{member.name}</td>
+                  <td 
+                    className="p-2 sticky left-10 bg-white z-10 text-xs md:text-sm cursor-pointer hover:text-blue-600 hover:underline"
+                    onClick={() => handleTipperClick(member)}
+                  >
+                    {member.name}
+                  </td>
                   {rounds.map(round => {
                     const score = memberScores[round];
                     const totalGames = matchesPerRound[round] || 0;
@@ -137,6 +160,46 @@ export function Leaderboard({ tippers, matches }: LeaderboardProps) {
             })}
           </tbody>
         </table>
+      )}
+
+      {/* Modal */} 
+      {isModalOpen && selectedTipperData && selectedTipperData.tipper && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          onClick={closeModal} // Close on overlay click
+        >
+          <div 
+            className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full"
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside modal
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">{selectedTipperData.tipper.name} - Round Scores</h3>
+              <button 
+                onClick={closeModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            <div className="max-h-60 overflow-y-auto space-y-2 pr-2"> {/* Scrollable content */}
+              {rounds.map(round => {
+                const score = selectedTipperData.scores[round];
+                const totalGames = matchesPerRound[round] || 0;
+                const displayScore = score !== undefined ? `${score} / ${totalGames}` : '-';
+                
+                return (
+                  <div key={round} className="flex justify-between items-center text-sm p-2 bg-gray-50 rounded">
+                    <span className="font-medium text-gray-700">Round {round}:</span>
+                    <span className="font-semibold text-blue-600">{displayScore}</span>
+                  </div>
+                );
+              })}
+              {Object.keys(selectedTipperData.scores).length === 0 && (
+                 <p className="text-sm text-gray-500 text-center py-4">No round scores available yet.</p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
