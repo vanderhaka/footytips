@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { History, Check } from 'lucide-react';
 import { TipEntry } from './TipEntry';
 import { RoundConfirmation } from './RoundConfirmation';
@@ -119,7 +119,7 @@ export function PastRounds({ tippers }: PastRoundsProps) {
               <button
                 key={round}
                 onClick={() => setSelectedRound(round)}
-                className={`p-4 text-left rounded-lg transition-all ${
+                className={`p-4 text-left rounded-lg transition-all ${ 
                   complete 
                     ? 'bg-green-50 hover:bg-green-100' 
                     : 'bg-gray-50 hover:bg-gray-100'
@@ -145,7 +145,7 @@ export function PastRounds({ tippers }: PastRoundsProps) {
   }
 
   return (
-    <div>
+    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-800">Round {selectedRound}</h2>
         <button
@@ -159,7 +159,7 @@ export function PastRounds({ tippers }: PastRoundsProps) {
           Back to Rounds
         </button>
       </div>
-
+      
       {!selectedMemberId && !showConfirmation && (
         <div className="grid gap-3">
           {tippers.map(member => {
@@ -168,7 +168,7 @@ export function PastRounds({ tippers }: PastRoundsProps) {
               <button
                 key={member.id}
                 onClick={() => setSelectedMemberId(member.id)}
-                className={`p-4 text-left rounded-lg transition-all ${
+                className={`p-4 text-left rounded-lg transition-all ${ 
                   hasEnteredTips 
                     ? 'bg-green-50 hover:bg-green-100' 
                     : 'bg-white hover:bg-gray-50'
@@ -187,7 +187,7 @@ export function PastRounds({ tippers }: PastRoundsProps) {
       )}
 
       {selectedMemberId && (
-        <TipEntry
+        <TipEntry 
           familyMember={tippers.find(m => m.id === selectedMemberId)!}
           onTipsSubmitted={handleTipsSubmitted}
           selectedRound={selectedRound}

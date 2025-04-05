@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { getTips, fetchMatches } from '../data';
 import { FamilyMember } from '../types';
@@ -46,6 +46,8 @@ export function RoundConfirmation({ round, tippers }: RoundConfirmationProps) {
       )
     )
   );
+
+  console.log('Display data:', { matches, tippers, roundTips: tips });
 
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">

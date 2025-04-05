@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Check, Calendar, MapPin, AlertCircle, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, Calendar, MapPin, AlertCircle } from 'lucide-react';
 import { Navigation } from './components/Navigation';
 import { TipEntry } from './components/TipEntry';
 import { Leaderboard } from './components/Leaderboard';
@@ -288,6 +288,7 @@ function App() {
             </div>
 
             {/* Conditional Content based on active tab */}
+            <>
             {activeOverviewTab === 'leaderboard' && (
               <Leaderboard tippers={tippers} matches={matches} />
             )}
@@ -437,6 +438,7 @@ function App() {
                 )}
               </div>
             )}
+            </>
           </>
         )}
       </div>

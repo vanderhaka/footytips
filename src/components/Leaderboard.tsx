@@ -55,8 +55,7 @@ export function Leaderboard({ tippers, matches }: LeaderboardProps) {
   useEffect(() => {
     const loadScores = async () => {
       setLoadingScores(true);
-      const scoresData: RoundScore[] = await fetchRoundScores();
-      console.log('Fetched round scores data:', scoresData);
+      const scoresData = await fetchRoundScores();
       
       const processed: ProcessedScores = {};
       const uniqueRounds = new Set<number>();

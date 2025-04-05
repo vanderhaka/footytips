@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Check, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { FamilyMember } from '../types';
 import { saveTip, fetchMatches, getCurrentRound, getTips } from '../data';
 
@@ -10,6 +10,14 @@ interface TipEntryProps {
 }
 
 export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEntryProps) {
+  // +++ DEBUG: Log props on initial render +++
+  useEffect(() => {
+    console.log('>>> TipEntry Mounted - Props Received <<<', {
+      familyMemberName: familyMember.name,
+      selectedRoundProp: selectedRound
+    });
+  }, [familyMember, selectedRound]); // Log only when these props change
+
   const [selectedTeams, setSelectedTeams] = useState<Record<string, string>>({});
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,6 +27,8 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
 
   useEffect(() => {
     const loadData = async () => {
+      // +++ DEBUG: Log data loading start +++
+      console.log('>>> TipEntry loadData Start <<<');
       try {
         const [matchesData, round] = await Promise.all([
           fetchMatches(),
@@ -28,24 +38,40 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
         const roundToUse = selectedRound !== undefined ? selectedRound : round;
         setCurrentRound(roundToUse);
 
-        // Check if round is locked (any match has started)
+        // +++ DEBUG: Check matches for the target round +++
         const roundMatches = matchesData.filter(m => m.round === roundToUse);
+        console.log(`>>> TipEntry loadData - Round ${roundToUse} Matches <<<`, {
+          count: roundMatches.length,
+          matchIds: roundMatches.map(m => m.id),
+          includes217: roundMatches.some(m => String(m.id) === '217')
+        });
+
+        // Check if round is locked
         const now = new Date();
         const isLocked = roundMatches.some(match => {
           const matchDate = new Date(match.match_date);
           return matchDate <= now;
         });
         setIsRoundLocked(isLocked);
+        console.log(`>>> TipEntry loadData - Round ${roundToUse} Locked? <<<`, isLocked);
 
-        // Load existing tips for both current and past rounds
+        // Load existing tips
         const tips = await getTips(roundToUse);
         const existingTips = tips?.reduce((acc: Record<string, string>, tip: any) => {
           if (tip.tipper_id === familyMember.id) {
-            acc[tip.match_id] = tip.team_tipped;
+            // Ensure match_id is stored as string key
+            acc[String(tip.match_id)] = tip.team_tipped;
           }
           return acc;
         }, {});
         setSelectedTeams(existingTips || {});
+
+        // +++ DEBUG: Log loaded tips +++
+        console.log(`>>> TipEntry loadData - Round ${roundToUse} Tips Loaded for ${familyMember.name} <<<`, {
+          tipCount: Object.keys(existingTips || {}).length,
+          tipsMap: existingTips,
+          tipFor217: existingTips?.['217'] || 'Not Found' // Check specifically for 217
+        });
 
         setLoading(false);
       } catch (error) {
@@ -54,8 +80,10 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
       }
     };
     loadData();
-  }, [selectedRound, familyMember.id]);
+  }, [selectedRound, familyMember.id]); // Ensure dependency array is present
 
+  // Comment out or remove the unused handleTeamSelect function if it's truly not needed
+  /* 
   const handleTeamSelect = (matchId: string, team: string) => {
     if (isRoundLocked) return;
     
@@ -64,6 +92,7 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
       [matchId]: team
     }));
   };
+  */
 
   const handleSubmit = async () => {
     if (isRoundLocked) return;
@@ -99,8 +128,8 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
     return <div className="text-center py-4">Loading matches...</div>;
   }
 
-  const roundMatches = matches.filter(match => match.round === currentRound);
-  const isComplete = roundMatches.every(match => selectedTeams[match.id]);
+  // Filter matches again for rendering (ensure it uses the state variable)
+  const roundMatchesForRender = matches.filter(match => match.round === currentRound);
 
   const formatMatchDateTime = (dateString: string | null) => {
     if (!dateString) return 'Date TBC';
@@ -126,33 +155,44 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
           Tips can no longer be entered or modified for this round as matches have already started.
         </p>
         <div className="space-y-4">
-          {roundMatches.map(match => (
-            <div key={match.id} className="p-4 border rounded-lg bg-gray-50">
-              <div className="flex justify-between items-start mb-3">
-                <p className="text-sm text-gray-600">
-                  {formatMatchDateTime(match.match_date)}
-                </p>
-                <p className="text-sm text-gray-600">{match.venue}</p>
-              </div>
-              <div className="flex gap-4">
-                <div className={`flex-1 p-3 rounded-lg border ${
-                  selectedTeams[match.id] === match.home_team.name
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  <div className="text-center">{match.home_team.name}</div>
+          {roundMatchesForRender.map(match => {
+            const matchIdStr = String(match.id);
+            const homeTeam = match.home_team;
+            const awayTeam = match.away_team;
+            const selectedTipValue = selectedTeams[matchIdStr];
+            
+            // Determine if home/away team was selected, checking name OR abbreviation
+            const isHomeSelected = selectedTipValue && (selectedTipValue === homeTeam.name || selectedTipValue === homeTeam.abbreviation);
+            const isAwaySelected = selectedTipValue && (selectedTipValue === awayTeam.name || selectedTipValue === awayTeam.abbreviation);
+            
+            return (
+              <div key={matchIdStr} className="p-4 border rounded-lg bg-gray-50">
+                <div className="flex justify-between items-start mb-3">
+                  <p className="text-sm text-gray-600">
+                    {formatMatchDateTime(match.match_date)}
+                  </p>
+                  <p className="text-sm text-gray-600">{match.venue}</p>
                 </div>
-                <span className="flex items-center text-gray-500">vs</span>
-                <div className={`flex-1 p-3 rounded-lg border ${
-                  selectedTeams[match.id] === match.away_team.name
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}>
-                  <div className="text-center">{match.away_team.name}</div>
+                <div className="flex gap-4">
+                  <div className={`flex-1 p-3 rounded-lg border ${ 
+                    isHomeSelected
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-800' 
+                  }`}>
+                    <div className="text-center">{homeTeam.name}</div>
+                  </div>
+                  <span className="flex items-center text-gray-500">vs</span>
+                  <div className={`flex-1 p-3 rounded-lg border ${ 
+                    isAwaySelected
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-800' 
+                  }`}>
+                    <div className="text-center">{awayTeam.name}</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     );
@@ -161,59 +201,59 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-6 text-blue-800">
-        Enter Tips for {familyMember.name} - Round {currentRound}
+        Tips for {familyMember.name} - Round {currentRound}
       </h2>
       
       <div className="space-y-4">
-        {roundMatches.map(match => (
-          <div key={match.id} className="p-4 border rounded-lg bg-gray-50">
-            <div className="flex justify-between items-start mb-3">
-              <p className="text-sm text-gray-600">
-                {formatMatchDateTime(match.match_date)}
-              </p>
-              <p className="text-sm text-gray-600">{match.venue}</p>
+        {roundMatchesForRender.map(match => {
+          const matchIdStr = String(match.id);
+          const homeTeam = match.home_team;
+          const awayTeam = match.away_team;
+          const selectedTipValue = selectedTeams[matchIdStr];
+          
+          // Determine if home/away team was selected, checking name OR abbreviation
+          const isHomeSelected = selectedTipValue && (selectedTipValue === homeTeam.name || selectedTipValue === homeTeam.abbreviation);
+          const isAwaySelected = selectedTipValue && (selectedTipValue === awayTeam.name || selectedTipValue === awayTeam.abbreviation);
+          
+          return (
+            <div key={matchIdStr} className="p-4 border rounded-lg bg-gray-50">
+              <div className="flex justify-between items-start mb-3">
+                <p className="text-sm text-gray-600">
+                  {formatMatchDateTime(match.match_date)}
+                </p>
+                <p className="text-sm text-gray-600">{match.venue}</p>
+              </div>
+              <div className="flex gap-4">
+                <div className={`flex-1 p-3 rounded-lg border ${ 
+                  isHomeSelected
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-gray-100 text-gray-800' 
+                }`}>
+                  <div className="text-center">{homeTeam.name}</div>
+                </div>
+                <span className="flex items-center text-gray-500">vs</span>
+                <div className={`flex-1 p-3 rounded-lg border ${ 
+                  isAwaySelected
+                    ? 'bg-blue-100 text-blue-800'
+                    : 'bg-gray-100 text-gray-800' 
+                }`}>
+                  <div className="text-center">{awayTeam.name}</div>
+                </div>
+              </div>
             </div>
-            <div className="flex gap-4">
-              <button
-                className={`flex-1 p-3 rounded-lg border transition-colors ${
-                  selectedTeams[match.id] === match.home_team.name
-                    ? 'bg-blue-500 text-white'
-                    : 'hover:bg-blue-50'
-                }`}
-                onClick={() => handleTeamSelect(match.id, match.home_team.name)}
-                disabled={saving}
-              >
-                {match.home_team.name}
-              </button>
-              <span className="flex items-center text-gray-500">vs</span>
-              <button
-                className={`flex-1 p-3 rounded-lg border transition-colors ${
-                  selectedTeams[match.id] === match.away_team.name
-                    ? 'bg-blue-500 text-white'
-                    : 'hover:bg-blue-50'
-                }`}
-                onClick={() => handleTeamSelect(match.id, match.away_team.name)}
-                disabled={saving}
-              >
-                {match.away_team.name}
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      <button
-        className={`mt-6 w-full py-3 px-6 rounded-lg flex items-center justify-center gap-2 ${
-          isComplete && !saving
-            ? 'bg-green-500 hover:bg-green-600 text-white'
-            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-        }`}
-        onClick={handleSubmit}
-        disabled={!isComplete || saving}
-      >
-        <Check size={20} />
-        {saving ? 'Saving...' : 'Submit Tips'}
-      </button>
+      {!isRoundLocked && (
+        <button 
+          onClick={handleSubmit} 
+          disabled={saving} 
+          className="mt-6 w-full py-3 px-4 bg-green-500 text-white font-semibold rounded-lg shadow hover:bg-green-600 transition-colors disabled:opacity-50"
+        >
+          {saving ? 'Saving...' : 'Save Tips'}
+        </button>
+      )}
     </div>
   );
 }

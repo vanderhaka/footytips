@@ -22,6 +22,17 @@ type Match = {
 };
 
 export const getTips = async (round: number) => {
+  // Get match IDs for this round
+  const { data: matchesData } = await supabase
+    .from('matches')
+    .select('id')
+    .eq('round', round);
+    
+  if (!matchesData?.length) return [];
+  
+  const matchIds = matchesData.map(m => m.id);
+  
+  // Then fetch tips for these matches
   const { data, error } = await supabase
     .from('tips')
     .select(`
@@ -33,7 +44,7 @@ export const getTips = async (round: number) => {
         away_team:teams!matches_away_team_fkey(name, abbreviation)
       )
     `)
-    .eq('round', round);
+    .in('match_id', matchIds);
   
   if (error) {
     console.error('Error fetching tips:', error);
@@ -108,14 +119,8 @@ export const fetchMatches = async (): Promise<Match[]> => {
     console.error('Error fetching matches:', error);
     return [];
   }
-
-  console.log('Raw match data:', JSON.stringify(data, null, 2));
   
   return (data || []).map(match => {
-    console.log('Processing match:', match.id);
-    console.log('Home team data:', match.home_team);
-    console.log('Away team data:', match.away_team);
-    
     const homeTeam = match.home_team as unknown as Team;
     const awayTeam = match.away_team as unknown as Team;
     
@@ -253,11 +258,6 @@ export const fetchRoundScores = async () => {
   if (error) {
     console.error('Error fetching round scores:', error);
     return [];
-  }
-  
-  // Log the structure of the first item if data exists
-  if (data && data.length > 0) {
-    console.log('Sample fetched tip data structure:', data[0]);
   }
   
   return data || []; 
