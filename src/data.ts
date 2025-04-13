@@ -57,7 +57,7 @@ export const getTips = async (round: number) => {
 export const saveTip = async (tip: {
   tipper_id: string;
   round: number;
-  match_id: string;
+  match_id: number;
   team_tipped: string;
 }) => {
   const { error } = await supabase
@@ -67,6 +67,8 @@ export const saveTip = async (tip: {
       round: tip.round,
       match_id: tip.match_id,
       team_tipped: tip.team_tipped,
+    }, {
+      onConflict: 'tipper_id, round, match_id'
     });
 
   if (error) {

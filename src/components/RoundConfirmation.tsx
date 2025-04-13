@@ -47,8 +47,6 @@ export function RoundConfirmation({ round, tippers }: RoundConfirmationProps) {
     )
   );
 
-  console.log('Display data:', { matches, tippers, roundTips: tips });
-
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <div className="flex items-center gap-2 mb-6">
@@ -75,9 +73,9 @@ export function RoundConfirmation({ round, tippers }: RoundConfirmationProps) {
               {roundMatches.map(match => (
                 <tr key={match.id} className="border-t">
                   <td className="p-3">
-                    <div className="font-medium">{match.home_team}</div>
+                    <div className="font-medium">{match.home_team.name}</div>
                     <div className="text-sm text-gray-500">vs</div>
-                    <div className="font-medium">{match.away_team}</div>
+                    <div className="font-medium">{match.away_team.name}</div>
                   </td>
                   {tippers.map(tipper => (
                     <td key={tipper.id} className="p-3">

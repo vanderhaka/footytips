@@ -20,6 +20,29 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
     return tip?.team_tipped || null;
   };
 
+  // --- Calculate Round Winners --- 
+  const allMatchesComplete = matches.length > 0 && matches.every(m => m.is_complete);
+  let roundWinners: FamilyMember[] = [];
+
+  if (allMatchesComplete) {
+    const scores: Record<string, number> = {};
+    tippers.forEach(tipper => {
+      scores[tipper.id] = 0;
+      matches.forEach(match => {
+        const tip = roundTips.find(t => t.tipper_id === tipper.id && String(t.match_id) === String(match.id));
+        if (tip && isTipCorrectSummary(tip, match)) {
+          scores[tipper.id]++;
+        }
+      });
+    });
+
+    const highestScore = Math.max(0, ...Object.values(scores)); 
+    if (highestScore > 0) { // Only declare winners if score > 0
+      roundWinners = tippers.filter(tipper => scores[tipper.id] === highestScore);
+    }
+  }
+  // --- End Calculate Round Winners ---
+
   return (
     <div className="bg-white rounded-lg shadow p-4 mb-4">
       <h3 className="text-lg font-semibold mb-3">{title}</h3>
@@ -28,11 +51,15 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
           <thead>
             <tr className="border-b">
               <th className="py-1 px-2 text-left font-medium">Game</th>
-              {tippers.map(tipper => (
-                <th key={tipper.id} className="py-1 px-2 text-left font-medium">
-                  {tipper.name.split(' ')[0]} {/* Show only first name */}
-                </th>
-              ))}
+              {tippers.map(tipper => {
+                const isWinner = allMatchesComplete && roundWinners.some(winner => winner.id === tipper.id);
+                return (
+                  <th key={tipper.id} className="py-1 px-2 text-left font-medium">
+                    {tipper.name.split(' ')[0]} {/* Show only first name */}
+                    {isWinner && ' 🏆'} {/* Add trophy if winner */}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -110,4 +137,26 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
       </div>
     </div>
   );
+}
+
+// Helper function to check tip correctness (similar to RoundConfirmation)
+function isTipCorrectSummary(tip: any, match: any): boolean {
+  if (!match.is_complete || !match.winner) {
+    return false;
+  }
+
+  // Find the winning team object (home or away)
+  const winningTeam = 
+    match.home_team.name === match.winner || match.home_team.abbreviation === match.winner
+    ? match.home_team
+    : match.away_team.name === match.winner || match.away_team.abbreviation === match.winner
+    ? match.away_team
+    : null;
+
+  if (!winningTeam) {
+    return false; 
+  }
+
+  // Check if the tipped team matches the winner's name OR abbreviation
+  return tip.team_tipped === winningTeam.name || tip.team_tipped === winningTeam.abbreviation;
 }

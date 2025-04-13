@@ -88,15 +88,16 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
       // Save each tip to the database, but only for matches where a team has been selected
       await Promise.all(
         roundMatches
-          .filter(match => selectedTeams[match.id]) // Only include matches with a selected team
-          .map(match => 
-            saveTip({
+          .filter(match => selectedTeams[String(match.id)]) // Use String(match.id) for filter
+          .map(match => { // Keep using String(match.id) for selectedTeams key
+            const matchIdStr = String(match.id);
+            return saveTip({              // Pass original numeric match.id to saveTip
               tipper_id: familyMember.id,
               round: currentRound,
-              match_id: match.id,
-              team_tipped: selectedTeams[match.id]
-            })
-          )
+              match_id: match.id, // Pass numeric match.id here
+              team_tipped: selectedTeams[matchIdStr] // Still use string key for lookup
+            });
+          })
       );
       
       onTipsSubmitted();
