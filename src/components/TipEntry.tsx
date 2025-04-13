@@ -23,7 +23,6 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
   const [loading, setLoading] = useState(true);
   const [currentRound, setCurrentRound] = useState<number>(0);
   const [saving, setSaving] = useState(false);
-  const [isRoundLocked, setIsRoundLocked] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -45,15 +44,6 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
           matchIds: roundMatches.map(m => m.id),
           includes217: roundMatches.some(m => String(m.id) === '217')
         });
-
-        // Check if round is locked
-        const now = new Date();
-        const isLocked = roundMatches.some(match => {
-          const matchDate = new Date(match.match_date);
-          return matchDate <= now;
-        });
-        setIsRoundLocked(isLocked);
-        console.log(`>>> TipEntry loadData - Round ${roundToUse} Locked? <<<`, isLocked);
 
         // Load existing tips
         const tips = await getTips(roundToUse);
@@ -82,21 +72,15 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
     loadData();
   }, [selectedRound, familyMember.id]); // Ensure dependency array is present
 
-  // Comment out or remove the unused handleTeamSelect function if it's truly not needed
-  /* 
+  // Add back handleTeamSelect function
   const handleTeamSelect = (matchId: string, team: string) => {
-    if (isRoundLocked) return;
-    
     setSelectedTeams(prev => ({
       ...prev,
       [matchId]: team
     }));
   };
-  */
 
   const handleSubmit = async () => {
-    if (isRoundLocked) return;
-
     try {
       setSaving(true);
       const roundMatches = matches.filter(match => match.round === currentRound);
@@ -144,60 +128,6 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
     });
   };
 
-  if (isRoundLocked) {
-    return (
-      <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-        <div className="flex items-center gap-2 mb-6 text-amber-600">
-          <AlertCircle size={24} />
-          <h2 className="text-2xl font-bold">Round {currentRound} is Locked</h2>
-        </div>
-        <p className="text-gray-600 mb-4">
-          Tips can no longer be entered or modified for this round as matches have already started.
-        </p>
-        <div className="space-y-4">
-          {roundMatchesForRender.map(match => {
-            const matchIdStr = String(match.id);
-            const homeTeam = match.home_team;
-            const awayTeam = match.away_team;
-            const selectedTipValue = selectedTeams[matchIdStr];
-            
-            // Determine if home/away team was selected, checking name OR abbreviation
-            const isHomeSelected = selectedTipValue && (selectedTipValue === homeTeam.name || selectedTipValue === homeTeam.abbreviation);
-            const isAwaySelected = selectedTipValue && (selectedTipValue === awayTeam.name || selectedTipValue === awayTeam.abbreviation);
-            
-            return (
-              <div key={matchIdStr} className="p-4 border rounded-lg bg-gray-50">
-                <div className="flex justify-between items-start mb-3">
-                  <p className="text-sm text-gray-600">
-                    {formatMatchDateTime(match.match_date)}
-                  </p>
-                  <p className="text-sm text-gray-600">{match.venue}</p>
-                </div>
-                <div className="flex gap-4">
-                  <div className={`flex-1 p-3 rounded-lg border ${ 
-                    isHomeSelected
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-gray-100 text-gray-800' 
-                  }`}>
-                    <div className="text-center">{homeTeam.name}</div>
-                  </div>
-                  <span className="flex items-center text-gray-500">vs</span>
-                  <div className={`flex-1 p-3 rounded-lg border ${ 
-                    isAwaySelected
-                      ? 'bg-blue-100 text-blue-800'
-                      : 'bg-gray-100 text-gray-800' 
-                  }`}>
-                    <div className="text-center">{awayTeam.name}</div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-6 text-blue-800">
@@ -224,19 +154,27 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
                 <p className="text-sm text-gray-600">{match.venue}</p>
               </div>
               <div className="flex gap-4">
-                <div className={`flex-1 p-3 rounded-lg border ${ 
+                {/* Add onClick handler and cursor-pointer to home team div */}
+                <div 
+                  className={`flex-1 p-3 rounded-lg border cursor-pointer ${ 
                   isHomeSelected
                     ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800' 
-                }`}>
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
+                  }`}
+                  onClick={() => handleTeamSelect(matchIdStr, homeTeam.name)}
+                >
                   <div className="text-center">{homeTeam.name}</div>
                 </div>
                 <span className="flex items-center text-gray-500">vs</span>
-                <div className={`flex-1 p-3 rounded-lg border ${ 
+                {/* Add onClick handler and cursor-pointer to away team div */}
+                <div 
+                  className={`flex-1 p-3 rounded-lg border cursor-pointer ${ 
                   isAwaySelected
                     ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800' 
-                }`}>
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
+                  }`}
+                  onClick={() => handleTeamSelect(matchIdStr, awayTeam.name)}
+                >
                   <div className="text-center">{awayTeam.name}</div>
                 </div>
               </div>
@@ -245,15 +183,13 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
         })}
       </div>
 
-      {!isRoundLocked && (
-        <button 
-          onClick={handleSubmit} 
-          disabled={saving} 
-          className="mt-6 w-full py-3 px-4 bg-green-500 text-white font-semibold rounded-lg shadow hover:bg-green-600 transition-colors disabled:opacity-50"
-        >
-          {saving ? 'Saving...' : 'Save Tips'}
-        </button>
-      )}
+      <button 
+        onClick={handleSubmit} 
+        disabled={saving} 
+        className="mt-6 w-full py-3 px-4 bg-green-500 text-white font-semibold rounded-lg shadow hover:bg-green-600 transition-colors disabled:opacity-50"
+      >
+        {saving ? 'Saving...' : 'Save Tips'}
+      </button>
     </div>
   );
 }
