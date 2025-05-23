@@ -113,7 +113,7 @@ function App() {
 
     return teamMatches.map(match => ({
       id: match.id,
-      win: match.winner === teamName,
+      win: match.winner === 'draw' ? null : match.winner === teamName,
       round: match.round,
       location: match.home_team.name === teamName ? 'home' : 'away'
     }));
@@ -333,6 +333,13 @@ function App() {
                     </div>
                      = Home Loss
                   </span>
+                  {/* Home Draw */}
+                  <span className="flex items-center gap-1">
+                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-full border-blue-500">
+                      <span className="text-xs font-bold leading-none text-blue-600">D</span>
+                    </div>
+                     = Home Draw
+                  </span>
                   {/* Away Win */}
                   <span className="flex items-center gap-1">
                     <div className="w-5 h-5 flex items-center justify-center border-2 rounded-sm border-green-500">
@@ -346,6 +353,13 @@ function App() {
                       <span className="text-xs font-bold leading-none text-red-600">L</span>
                     </div>
                      = Away Loss
+                  </span>
+                  {/* Away Draw */}
+                  <span className="flex items-center gap-1">
+                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-sm border-blue-500">
+                      <span className="text-xs font-bold leading-none text-blue-600">D</span>
+                    </div>
+                     = Away Draw
                   </span>
                 </div>
 
@@ -370,12 +384,12 @@ function App() {
                                     <div key={`${match.id}-h-${form.id}`} className="flex flex-col items-center">
                                       <span className="text-xs text-gray-400 leading-none mb-0.5">R{form.round}</span>
                                       <div 
-                                        className={`w-5 h-5 flex items-center justify-center border-2 ${form.location === 'home' ? 'rounded-full' : 'rounded-sm'} ${form.win ? 'border-green-500' : 'border-red-500'}`}
+                                        className={`w-5 h-5 flex items-center justify-center border-2 ${form.location === 'home' ? 'rounded-full' : 'rounded-sm'} ${form.win === null ? 'border-blue-500' : form.win ? 'border-green-500' : 'border-red-500'}`}
                                       >
                                         <span 
-                                          className={`text-xs font-bold leading-none ${form.win ? 'text-green-600' : 'text-red-600'}`}
+                                          className={`text-xs font-bold leading-none ${form.win === null ? 'text-blue-600' : form.win ? 'text-green-600' : 'text-red-600'}`}
                                         >
-                                          {form.win ? 'W' : 'L'}
+                                          {form.win === null ? 'D' : form.win ? 'W' : 'L'}
                                         </span>
                                       </div>
                                     </div>
@@ -398,12 +412,12 @@ function App() {
                                     <div key={`${match.id}-a-${form.id}`} className="flex flex-col items-center">
                                       <span className="text-xs text-gray-400 leading-none mb-0.5">R{form.round}</span>
                                       <div 
-                                        className={`w-5 h-5 flex items-center justify-center border-2 ${form.location === 'home' ? 'rounded-full' : 'rounded-sm'} ${form.win ? 'border-green-500' : 'border-red-500'}`}
+                                        className={`w-5 h-5 flex items-center justify-center border-2 ${form.location === 'home' ? 'rounded-full' : 'rounded-sm'} ${form.win === null ? 'border-blue-500' : form.win ? 'border-green-500' : 'border-red-500'}`}
                                       >
                                         <span 
-                                          className={`text-xs font-bold leading-none ${form.win ? 'text-green-600' : 'text-red-600'}`}
+                                          className={`text-xs font-bold leading-none ${form.win === null ? 'text-blue-600' : form.win ? 'text-green-600' : 'text-red-600'}`}
                                         >
-                                          {form.win ? 'W' : 'L'}
+                                          {form.win === null ? 'D' : form.win ? 'W' : 'L'}
                                         </span>
                                       </div>
                                     </div>

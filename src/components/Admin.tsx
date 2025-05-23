@@ -1,10 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Trophy, Check, Loader2, AlertCircle } from 'lucide-react';
 import { fetchMatches, updateMatchResult, calculatePoints } from '../data';
 import { GameStats } from './GameStats';
 
+interface Match {
+  id: string;
+  round: number;
+  venue: string;
+  match_date: string;
+  home_score: number | null;
+  away_score: number | null;
+  winner: string | null;
+  is_complete: boolean;
+  created_at: string;
+  home_team: {
+    name: string;
+    abbreviation: string;
+  };
+  away_team: {
+    name: string;
+    abbreviation: string;
+  };
+}
+
 export function Admin() {
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingMatch, setSavingMatch] = useState<string | null>(null);
@@ -37,7 +57,11 @@ export function Admin() {
       
       // Update local matches state
       setMatches(prev => prev.map(m => 
-        m.id === matchId ? { ...m, ...updatedMatch } : m
+        m.id === matchId ? { 
+          ...m, 
+          winner: updatedMatch.winner,
+          is_complete: updatedMatch.is_complete
+        } : m
       ));
       
       // Calculate points for all rounds since a result can affect overall standings
@@ -159,10 +183,31 @@ export function Admin() {
                   </button>
                 </div>
                 
+                <div className="mt-2">
+                  <button
+                    className={`w-full p-3 rounded-lg border transition-colors ${
+                      match.winner === 'draw'
+                        ? 'bg-blue-500 text-white'
+                        : 'hover:bg-gray-50'
+                    } ${savingMatch === match.id ? 'opacity-75' : ''}`}
+                    onClick={() => handleWinnerSelect(match.id, 'draw')}
+                    disabled={savingMatch !== null || isCompleted}
+                  >
+                    <span className="flex items-center justify-center gap-2">
+                      Draw
+                      {savingMatch === match.id ? (
+                        <Loader2 className="animate-spin" size={16} />
+                      ) : match.winner === 'draw' && (
+                        <Check size={16} />
+                      )}
+                    </span>
+                  </button>
+                </div>
+                
                 {match.is_complete && (
                   <div className="mt-2 flex items-center justify-between">
                     <p className="text-sm text-green-600">
-                      Match complete - Winner: {match.winner}
+                      Match complete - {match.winner === 'draw' ? 'Draw' : `Winner: ${match.winner}`}
                     </p>
                     {!isEditing ? (
                       <button

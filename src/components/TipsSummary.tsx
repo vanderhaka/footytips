@@ -75,6 +75,9 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
                       <span>{homeTeam.abbreviation}</span>
                       <span className="text-gray-400">v</span>
                       <span>{awayTeam.abbreviation}</span>
+                      {match.is_complete && match.winner === 'draw' && (
+                        <span className="ml-1 text-blue-600 font-semibold">(Draw)</span>
+                      )}
                     </div>
                   </td>
                   {tippers.map(tipper => {
@@ -99,7 +102,8 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
                     }
 
                     // --- Robust Correctness Check ---
-                    const isCorrect = match.is_complete && tippedTeamObject && match.winner &&
+                    // For draws, no tip is correct
+                    const isCorrect = match.is_complete && match.winner !== 'draw' && tippedTeamObject && match.winner &&
                                       (tippedTeamObject.name === match.winner || tippedTeamObject.abbreviation === match.winner);
 
                     // --- Render Tip Cell ---
@@ -108,16 +112,18 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
                         {tipValue ? (
                           <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs
                             ${match.is_complete 
-                              ? isCorrect // Use the robust check
-                                ? 'bg-green-100 text-green-800' // Correct tip
-                                : 'bg-red-100 text-red-800'   // Incorrect tip
+                              ? match.winner === 'draw'
+                                ? 'bg-blue-100 text-blue-800' // Draw - show in blue
+                                : isCorrect // Use the robust check
+                                  ? 'bg-green-100 text-green-800' // Correct tip
+                                  : 'bg-red-100 text-red-800'   // Incorrect tip
                               : tipAbbr // If match not complete, but tip exists, use default highlight
                                 ? 'bg-blue-100 text-blue-800' // Highlight selected tip (changed from gray)
                                 : 'bg-gray-100 text-gray-800' // Fallback if tip exists but no abbr found
                             }` }
                           >
                             {tipAbbr || '??'} {/* Display abbreviation or ?? if not found */}
-                            {match.is_complete && (
+                            {match.is_complete && match.winner !== 'draw' && (
                               isCorrect
                                 ? <Check className="text-green-500" size={12} />
                                 : <X className="text-red-500" size={12} />
