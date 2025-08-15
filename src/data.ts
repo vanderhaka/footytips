@@ -173,7 +173,6 @@ export const updateMatchResult = async (
   homeScore: number | null = null,
   awayScore: number | null = null
 ) => {
-  console.log('updateMatchResult called with winner:', winner);
   try {
     // First update the match scores if provided
     if (homeScore !== null && awayScore !== null) {

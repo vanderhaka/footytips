@@ -102,9 +102,12 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
                     }
 
                     // --- Robust Correctness Check ---
-                    // For draws, no tip is correct
-                    const isCorrect = match.is_complete && match.winner !== 'draw' && tippedTeamObject && match.winner &&
-                                      (tippedTeamObject.name === match.winner || tippedTeamObject.abbreviation === match.winner);
+                    // For draws, all tips are correct
+                    const isCorrect = match.is_complete && (
+                      match.winner === 'draw' || // All tips correct for draws
+                      (tippedTeamObject && match.winner &&
+                       (tippedTeamObject.name === match.winner || tippedTeamObject.abbreviation === match.winner))
+                    );
 
                     // --- Render Tip Cell ---
                     return (
@@ -112,18 +115,16 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
                         {tipValue ? (
                           <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs
                             ${match.is_complete 
-                              ? match.winner === 'draw'
-                                ? 'bg-blue-100 text-blue-800' // Draw - show in blue
-                                : isCorrect // Use the robust check
-                                  ? 'bg-green-100 text-green-800' // Correct tip
-                                  : 'bg-red-100 text-red-800'   // Incorrect tip
+                              ? isCorrect // Use the robust check (includes draws)
+                                ? 'bg-green-100 text-green-800' // Correct tip (including draws)
+                                : 'bg-red-100 text-red-800'   // Incorrect tip
                               : tipAbbr // If match not complete, but tip exists, use default highlight
                                 ? 'bg-blue-100 text-blue-800' // Highlight selected tip (changed from gray)
                                 : 'bg-gray-100 text-gray-800' // Fallback if tip exists but no abbr found
                             }` }
                           >
                             {tipAbbr || '??'} {/* Display abbreviation or ?? if not found */}
-                            {match.is_complete && match.winner !== 'draw' && (
+                            {match.is_complete && (
                               isCorrect
                                 ? <Check className="text-green-500" size={12} />
                                 : <X className="text-red-500" size={12} />
@@ -149,6 +150,11 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
 function isTipCorrectSummary(tip: any, match: any): boolean {
   if (!match.is_complete || !match.winner) {
     return false;
+  }
+
+  // For draws, all tips are correct
+  if (match.winner === 'draw') {
+    return true;
   }
 
   // Find the winning team object (home or away)
