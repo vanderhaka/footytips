@@ -146,18 +146,18 @@ export function Admin() {
                 <div className="flex gap-4">
                   <button
                     className={`flex-1 p-3 rounded-lg border transition-colors ${
-                      match.winner === match.home_team.name
+                      match.winner === match.home_team.abbreviation
                         ? 'bg-green-500 text-white'
                         : 'hover:bg-gray-50'
                     } ${savingMatch === match.id ? 'opacity-75' : ''}`}
-                    onClick={() => handleWinnerSelect(match.id, match.home_team.name)}
+                    onClick={() => handleWinnerSelect(match.id, match.home_team.abbreviation)}
                     disabled={savingMatch !== null || isCompleted}
                   >
                     <span className="flex items-center justify-center gap-2">
                       {match.home_team.name}
                       {savingMatch === match.id ? (
                         <Loader2 className="animate-spin" size={16} />
-                      ) : match.winner === match.home_team.name && (
+                      ) : match.winner === match.home_team.abbreviation && (
                         <Check size={16} />
                       )}
                     </span>
@@ -165,18 +165,18 @@ export function Admin() {
                   
                   <button
                     className={`flex-1 p-3 rounded-lg border transition-colors ${
-                      match.winner === match.away_team.name
+                      match.winner === match.away_team.abbreviation
                         ? 'bg-green-500 text-white'
                         : 'hover:bg-gray-50'
                     } ${savingMatch === match.id ? 'opacity-75' : ''}`}
-                    onClick={() => handleWinnerSelect(match.id, match.away_team.name)}
+                    onClick={() => handleWinnerSelect(match.id, match.away_team.abbreviation)}
                     disabled={savingMatch !== null || isCompleted}
                   >
                     <span className="flex items-center justify-center gap-2">
                       {match.away_team.name}
                       {savingMatch === match.id ? (
                         <Loader2 className="animate-spin" size={16} />
-                      ) : match.winner === match.away_team.name && (
+                      ) : match.winner === match.away_team.abbreviation && (
                         <Check size={16} />
                       )}
                     </span>
@@ -207,7 +207,13 @@ export function Admin() {
                 {match.is_complete && (
                   <div className="mt-2 flex items-center justify-between">
                     <p className="text-sm text-green-600">
-                      Match complete - {match.winner === 'draw' ? 'Draw' : `Winner: ${match.winner}`}
+                      Match complete - {match.winner === 'draw' ? 'Draw' : `Winner: ${
+                        match.winner === match.home_team.abbreviation 
+                          ? match.home_team.name 
+                          : match.winner === match.away_team.abbreviation 
+                            ? match.away_team.name 
+                            : match.winner
+                      }`}
                     </p>
                     {!isEditing ? (
                       <button

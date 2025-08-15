@@ -162,7 +162,7 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
                     ? 'bg-blue-100 text-blue-800'
                     : 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
                   }`}
-                  onClick={() => handleTeamSelect(matchIdStr, homeTeam.name)}
+                  onClick={() => handleTeamSelect(matchIdStr, homeTeam.abbreviation)}
                 >
                   <div className="text-center">{homeTeam.name}</div>
                 </div>
@@ -174,7 +174,7 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
                     ? 'bg-blue-100 text-blue-800'
                     : 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
                   }`}
-                  onClick={() => handleTeamSelect(matchIdStr, awayTeam.name)}
+                  onClick={() => handleTeamSelect(matchIdStr, awayTeam.abbreviation)}
                 >
                   <div className="text-center">{awayTeam.name}</div>
                 </div>
