@@ -132,12 +132,14 @@ export function Admin() {
               <div key={match.id} className="p-4 border rounded-lg">
                 <div className="flex justify-between items-center mb-4">
                   <p className="text-sm text-gray-600">
-                    {new Date(match.match_date).toLocaleDateString('en-AU', {
+                    {new Date(match.match_date).toLocaleString('en-AU', {
                       weekday: 'long',
                       day: 'numeric',
                       month: 'long',
                       hour: 'numeric',
-                      minute: 'numeric'
+                      minute: 'numeric',
+                      hour12: true,
+                      timeZone: 'Australia/Melbourne'
                     })}
                   </p>
                   <p className="text-sm text-gray-600">{match.venue}</p>

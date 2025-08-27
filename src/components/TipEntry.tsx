@@ -119,14 +119,20 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
   const formatMatchDateTime = (dateString: string | null) => {
     if (!dateString) return 'Date TBC';
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-AU', {
+    
+    // The dates are stored in UTC but represent AEST/AEDT times
+    // We need to display them as-is without timezone conversion
+    const options: Intl.DateTimeFormatOptions = {
       weekday: 'long',
       day: 'numeric',
       month: 'long',
       hour: 'numeric',
       minute: 'numeric',
-      hour12: true
-    });
+      hour12: true,
+      timeZone: 'Australia/Melbourne'
+    };
+    
+    return date.toLocaleString('en-AU', options);
   };
 
   return (

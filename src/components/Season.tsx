@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, Calendar, AlertCircle, CheckCircle, XCircle } from 'lucide-react';
+import { MapPin, Calendar, AlertCircle, CheckCircle, XCircle, ChevronDown, ChevronRight, ArrowUpAZ, ArrowDownAZ } from 'lucide-react';
 import { fetchMatches, getTips, fetchTippers } from '../data';
 import { FamilyMember } from '../types';
 
@@ -27,6 +27,8 @@ export function Season() {
   const [loading, setLoading] = useState(true);
   const [tippers, setTippers] = useState<FamilyMember[]>([]);
   const [roundTips, setRoundTips] = useState<Record<number, any[]>>({});
+  const [sortDesc, setSortDesc] = useState(false); // false: 0 → Finals, true: Finals → 0
+  const [openRounds, setOpenRounds] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     const loadData = async () => {
@@ -61,6 +63,13 @@ export function Season() {
     loadData();
   }, []);
 
+  // Initialize open rounds once matches are loaded (default: all open)
+  useEffect(() => {
+    if (!matches.length || openRounds.size > 0) return;
+    const uniqueRounds = Array.from(new Set(matches.map(m => m.round)));
+    setOpenRounds(new Set(uniqueRounds));
+  }, [matches]);
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -69,7 +78,23 @@ export function Season() {
     );
   }
 
-  const rounds = Array.from(new Set(matches.map(m => m.round))).sort((a, b) => a - b);
+  let rounds = Array.from(new Set(matches.map(m => m.round))).sort((a, b) => a - b);
+  if (sortDesc) rounds = rounds.reverse();
+
+  const getRoundLabel = (roundNum: number) => {
+    switch (roundNum) {
+      case 26:
+        return 'Finals Week 1';
+      case 27:
+        return 'Finals Week 2';
+      case 28:
+        return 'Preliminary Finals';
+      case 29:
+        return 'Grand Final';
+      default:
+        return `Round ${roundNum}`;
+    }
+  };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Date TBC';
@@ -100,13 +125,57 @@ export function Season() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8">
+      {/* Controls: sort and expand/collapse */}
+      <div className="flex items-center justify-between bg-white rounded-lg shadow-sm p-4">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSortDesc(s => !s)}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+            aria-label="Toggle round sort order"
+          >
+            {sortDesc ? <ArrowDownAZ size={16} /> : <ArrowUpAZ size={16} />}
+            <span>Sort: {sortDesc ? 'Finals → 0' : '0 → Finals'}</span>
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => {
+              const all = new Set(rounds);
+              setOpenRounds(all);
+            }}
+            className="px-3 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
+            Expand all
+          </button>
+          <button
+            onClick={() => setOpenRounds(new Set())}
+            className="px-3 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
+          >
+            Collapse all
+          </button>
+        </div>
+      </div>
       {rounds.map(round => {
         const roundMatches = matches.filter(m => m.round === round);
         return (
           <div key={round} className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="bg-blue-50 px-6 py-4 border-b">
-              <h2 className="text-xl font-bold text-blue-900">Round {round}</h2>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                const next = new Set(openRounds);
+                if (next.has(round)) next.delete(round); else next.add(round);
+                setOpenRounds(next);
+              }}
+              className="w-full bg-blue-50 px-6 py-4 border-b flex items-center justify-between text-left"
+              aria-expanded={openRounds.has(round)}
+            >
+              <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
+                {openRounds.has(round) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                {getRoundLabel(round)}
+              </h2>
+              <span className="text-sm text-blue-900/70">{roundMatches.length} match{roundMatches.length !== 1 ? 'es' : ''}</span>
+            </button>
+            {openRounds.has(round) && (
             <div className="divide-y">
               {roundMatches.map(match => (
                 <div key={match.id} className="px-6 py-4">
@@ -178,6 +247,7 @@ export function Season() {
                 </div>
               ))}
             </div>
+            )}
           </div>
         );
       })}
