@@ -10,6 +10,7 @@ import { Admin } from './components/Admin';
 import { Login } from './components/Login';
 import { TipsSummary } from './components/TipsSummary';
 import { getTips, fetchTippers, getCurrentRound, fetchMatches } from './data';
+import { getRoundLabel } from './lib/roundLabels';
 import { getSession } from './lib/auth';
 import { FamilyMember } from './types';
 
@@ -239,7 +240,7 @@ function App() {
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
-                    Round {currentRound} Tips
+                    {getRoundLabel(currentRound)} Tips
                   </button>
                   {/* Upcoming Fixture Button */}
                   <button
@@ -262,7 +263,7 @@ function App() {
                           : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                       }`}
                     >
-                      Round {previousRound} Results
+                      {getRoundLabel(previousRound)} Results
                     </button>
                   )}
                 </nav>
@@ -278,10 +279,10 @@ function App() {
                   onChange={(e) => setActiveOverviewTab(e.target.value as 'leaderboard' | 'current' | 'previous' | 'fixture')}
                 >
                   <option value="leaderboard">Leaderboard</option>
-                  <option value="current">Round {currentRound} Tips</option>
+                  <option value="current">{getRoundLabel(currentRound)} Tips</option>
                   <option value="fixture">Upcoming Matches</option>
                   {!loadingPrevious && previousRound && previousRoundMatches.length > 0 && (
-                    <option value="previous">Round {previousRound} Results</option>
+                    <option value="previous">{getRoundLabel(previousRound)} Results</option>
                   )}
                 </select>
               </div>
@@ -295,7 +296,7 @@ function App() {
             
             {activeOverviewTab === 'current' && (
               <TipsSummary
-                title={`Round ${currentRound} Tips`}
+                title={`${getRoundLabel(currentRound)} Tips`}
                 tippers={tippers}
                 matches={currentRoundMatches}
                 roundTips={roundTips}
@@ -304,7 +305,7 @@ function App() {
 
             {activeOverviewTab === 'previous' && !loadingPrevious && previousRound && previousRoundMatches.length > 0 && (
               <TipsSummary
-                title={`Round ${previousRound} Results`}
+                title={`${getRoundLabel(previousRound)} Results`}
                 tippers={tippers}
                 matches={previousRoundMatches}
                 roundTips={previousRoundTips}
@@ -314,7 +315,7 @@ function App() {
             {activeOverviewTab === 'fixture' && (
               <div className="bg-white rounded-lg shadow-sm overflow-hidden">
                 <div className="bg-blue-50 px-4 md:px-6 py-3 md:py-4 border-b">
-                  <h2 className="text-lg md:text-xl font-bold text-blue-900">Round {currentRound} Fixture</h2>
+                  <h2 className="text-lg md:text-xl font-bold text-blue-900">{getRoundLabel(currentRound)} Fixture</h2>
                 </div>
                 {/* Form Guide Legend */}
                 <div className="px-4 md:px-6 pt-3 pb-2 text-xs text-gray-600 flex flex-wrap gap-x-3 md:gap-x-4 gap-y-1">

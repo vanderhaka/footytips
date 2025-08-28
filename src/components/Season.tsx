@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MapPin, Calendar, AlertCircle, CheckCircle, XCircle, ChevronDown, ChevronRight, ArrowUpAZ, ArrowDownAZ } from 'lucide-react';
 import { fetchMatches, getTips, fetchTippers } from '../data';
 import { FamilyMember } from '../types';
+import { getRoundLabel } from '../lib/roundLabels';
 
 interface Match {
   id: string;
@@ -81,20 +82,7 @@ export function Season() {
   let rounds = Array.from(new Set(matches.map(m => m.round))).sort((a, b) => a - b);
   if (sortDesc) rounds = rounds.reverse();
 
-  const getRoundLabel = (roundNum: number) => {
-    switch (roundNum) {
-      case 26:
-        return 'Finals Week 1';
-      case 27:
-        return 'Finals Week 2';
-      case 28:
-        return 'Preliminary Finals';
-      case 29:
-        return 'Grand Final';
-      default:
-        return `Round ${roundNum}`;
-    }
-  };
+  // getRoundLabel imported from shared util
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return 'Date TBC';
