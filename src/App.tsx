@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Check } from 'lucide-react';
 import { Navigation } from './components/Navigation';
 import { TipEntry } from './components/TipEntry';
@@ -11,100 +11,58 @@ import { Login } from './components/Login';
 import { TipsSummary } from './components/TipsSummary';
 import { OverviewTabs, OverviewTabValue } from './components/OverviewTabs';
 import { FixtureList } from './components/FixtureList';
-import { getTips, fetchTippers, getCurrentRound, fetchMatches } from './data';
+import { useAuth, useData } from './contexts';
 import { getRoundLabel } from './lib/roundLabels';
-import { getSession } from './lib/auth';
-import { FamilyMember, Match } from './types';
+import { FamilyMember, DatabaseTip, Match } from './types';
 
 function App() {
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const {
+    matches,
+    tippers,
+    currentRound,
+    isLoading: dataLoading,
+    completedMatches,
+    currentRoundMatches,
+    previousRound,
+    previousRoundMatches,
+    roundTips,
+    loadTipsForRound,
+    refreshTipsForRound
+  } = useData();
+
   const [currentView, setCurrentView] = useState<'tips' | 'season' | 'past' | 'admin' | 'enter_tips'>('tips');
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [showConfirmation, setShowConfirmation] = useState(false);
-  const [tippers, setTippers] = useState<FamilyMember[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [currentRound, setCurrentRound] = useState<number>(1);
-  const [roundTips, setRoundTips] = useState<any[]>([]);
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [checkingAuth, setCheckingAuth] = useState(true);
-  const [previousRoundTips, setPreviousRoundTips] = useState<any[]>([]);
-  const [loadingPrevious, setLoadingPrevious] = useState(true);
   const [activeOverviewTab, setActiveOverviewTab] = useState<OverviewTabValue>('leaderboard');
+  const [loadingPrevious, setLoadingPrevious] = useState(true);
 
+  // Load current and previous round tips on mount
   useEffect(() => {
-    const checkAuth = async () => {
-      const session = await getSession();
-      setIsAuthenticated(!!session);
-      setCheckingAuth(false);
-    };
-    checkAuth();
-  }, []);
-
-  useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      setLoadingPrevious(true);
-      try {
-        const [tippersData, round, matchesData] = await Promise.all([
-          fetchTippers(),
-          getCurrentRound(),
-          fetchMatches()
-        ]);
-        setTippers(tippersData);
-        setCurrentRound(round);
-        setMatches(matchesData);
-
-        const currentTips = await getTips(round);
-        setRoundTips(currentTips || []);
-        setLoading(false);
-
-        if (round > 1) {
-          const previousTips = await getTips(round - 1);
-          setPreviousRoundTips(previousTips || []);
-        } else {
-          setPreviousRoundTips([]);
+    if (!dataLoading && currentRound > 0) {
+      const loadInitialTips = async () => {
+        await loadTipsForRound(currentRound);
+        if (currentRound > 1) {
+          await loadTipsForRound(currentRound - 1);
         }
         setLoadingPrevious(false);
-      } catch (error) {
-        console.error('Error loading data:', error);
-        setLoading(false);
-        setLoadingPrevious(false);
-      }
-    };
-    loadData();
-  }, []);
+      };
+      loadInitialTips();
+    }
+  }, [dataLoading, currentRound, loadTipsForRound]);
 
-  const handleTipsSubmitted = async () => {
-    const tips = await getTips(currentRound);
-    setRoundTips(tips || []);
+  const handleTipsSubmitted = useCallback(async () => {
+    await refreshTipsForRound(currentRound);
     setSelectedMemberId('');
     setShowConfirmation(true);
-  };
+  }, [currentRound, refreshTipsForRound]);
 
-  const hasMemberEnteredTips = (memberId: string) => {
-    if (!Array.isArray(roundTips)) return false;
-    return roundTips.some(tip => tip.tipper_id === memberId);
-  };
+  const hasMemberEnteredTips = useCallback((memberId: string): boolean => {
+    const tips = roundTips[currentRound] || [];
+    return tips.some(tip => tip.tipper_id === memberId);
+  }, [roundTips, currentRound]);
 
-  // Memoized filtered data
-  const completedMatches = useMemo(
-    () => matches.filter(m => m.is_complete),
-    [matches]
-  );
-
-  const currentRoundMatches = useMemo(
-    () => matches.filter(m => m.round === currentRound),
-    [matches, currentRound]
-  );
-
-  const previousRound = currentRound > 1 ? currentRound - 1 : null;
-
-  const previousRoundMatches = useMemo(
-    () => (previousRound ? matches.filter(m => m.round === previousRound) : []),
-    [matches, previousRound]
-  );
-
-  if (loading || checkingAuth) {
+  if (authLoading || dataLoading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-gray-600">Loading...</div>
@@ -117,6 +75,9 @@ function App() {
     setSelectedMemberId('');
     setShowConfirmation(false);
   };
+
+  const currentTips = roundTips[currentRound] || [];
+  const previousTips = previousRound ? (roundTips[previousRound] || []) : [];
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -133,13 +94,13 @@ function App() {
           isAuthenticated ? (
             <PastRounds tippers={tippers} />
           ) : (
-            <Login onSuccess={() => setIsAuthenticated(true)} />
+            <Login />
           )
         ) : currentView === 'admin' ? (
           isAuthenticated ? (
             <Admin />
           ) : (
-            <Login onSuccess={() => setIsAuthenticated(true)} />
+            <Login />
           )
         ) : currentView === 'enter_tips' ? (
           isAuthenticated ? (
@@ -154,7 +115,7 @@ function App() {
               onBackToSelect={() => setShowConfirmation(false)}
             />
           ) : (
-            <Login onSuccess={() => setIsAuthenticated(true)} />
+            <Login />
           )
         ) : (
           <OverviewView
@@ -164,10 +125,10 @@ function App() {
             matches={matches}
             currentRound={currentRound}
             currentRoundMatches={currentRoundMatches}
-            roundTips={roundTips}
+            roundTips={currentTips}
             previousRound={previousRound}
             previousRoundMatches={previousRoundMatches}
-            previousRoundTips={previousRoundTips}
+            previousRoundTips={previousTips}
             loadingPrevious={loadingPrevious}
             completedMatches={completedMatches}
           />
@@ -258,10 +219,10 @@ interface OverviewViewProps {
   matches: Match[];
   currentRound: number;
   currentRoundMatches: Match[];
-  roundTips: any[];
+  roundTips: DatabaseTip[];
   previousRound: number | null;
   previousRoundMatches: Match[];
-  previousRoundTips: any[];
+  previousRoundTips: DatabaseTip[];
   loadingPrevious: boolean;
   completedMatches: Match[];
 }

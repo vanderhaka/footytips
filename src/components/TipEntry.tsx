@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
-import { FamilyMember, Match } from '../types';
-import { saveTip, fetchMatches, getCurrentRound, getTips } from '../data';
+import { useState, useEffect, useMemo } from 'react';
+import { FamilyMember, DatabaseTip } from '../types';
+import { saveTip, getTips } from '../data';
+import { useData } from '../contexts';
 import { formatMatchDateTime } from '../lib/formatDate';
 import { getRoundLabel } from '../lib/roundLabels';
 
@@ -11,40 +12,39 @@ interface TipEntryProps {
 }
 
 export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEntryProps) {
+  const { matches, currentRound: contextRound } = useData();
   const [selectedTeams, setSelectedTeams] = useState<Record<string, string>>({});
-  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
-  const [currentRound, setCurrentRound] = useState<number>(0);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [matchesData, round] = await Promise.all([
-          fetchMatches(),
-          selectedRound !== undefined ? Promise.resolve(selectedRound) : getCurrentRound()
-        ]);
-        setMatches(matchesData);
-        const roundToUse = selectedRound !== undefined ? selectedRound : round;
-        setCurrentRound(roundToUse);
+  // Use selectedRound prop if provided, otherwise use context's currentRound
+  const roundToUse = selectedRound !== undefined ? selectedRound : contextRound;
 
-        // Load existing tips
+  // Filter matches for the current round
+  const roundMatches = useMemo(
+    () => matches.filter(match => match.round === roundToUse),
+    [matches, roundToUse]
+  );
+
+  useEffect(() => {
+    const loadExistingTips = async () => {
+      try {
         const tips = await getTips(roundToUse);
-        const existingTips = tips?.reduce((acc: Record<string, string>, tip: any) => {
+        const existingTips = (tips || []).reduce((acc: Record<string, string>, tip: DatabaseTip) => {
           if (tip.tipper_id === familyMember.id) {
             acc[String(tip.match_id)] = tip.team_tipped;
           }
           return acc;
         }, {});
-        setSelectedTeams(existingTips || {});
-        setLoading(false);
+        setSelectedTeams(existingTips);
       } catch (error) {
-        console.error('Error loading data:', error);
+        console.error('Error loading tips:', error);
+      } finally {
         setLoading(false);
       }
     };
-    loadData();
-  }, [selectedRound, familyMember.id]);
+    loadExistingTips();
+  }, [roundToUse, familyMember.id]);
 
   const handleTeamSelect = (matchId: string, team: string) => {
     setSelectedTeams(prev => ({
@@ -56,23 +56,22 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
   const handleSubmit = async () => {
     try {
       setSaving(true);
-      const roundMatches = matches.filter(match => match.round === currentRound);
-      
+
       // Save each tip to the database, but only for matches where a team has been selected
       await Promise.all(
         roundMatches
-          .filter(match => selectedTeams[String(match.id)]) // Use String(match.id) for filter
-          .map(match => { // Keep using String(match.id) for selectedTeams key
+          .filter(match => selectedTeams[String(match.id)])
+          .map(match => {
             const matchIdStr = String(match.id);
-            return saveTip({              // Pass original numeric match.id to saveTip
+            return saveTip({
               tipper_id: familyMember.id,
-              round: currentRound,
-              match_id: match.id, // Pass numeric match.id here
-              team_tipped: selectedTeams[matchIdStr] // Still use string key for lookup
+              round: roundToUse,
+              match_id: match.id,
+              team_tipped: selectedTeams[matchIdStr]
             });
           })
       );
-      
+
       onTipsSubmitted();
     } catch (error) {
       console.error('Error saving tips:', error);
@@ -86,25 +85,23 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
     return <div className="text-center py-4">Loading matches...</div>;
   }
 
-  const roundMatchesForRender = matches.filter(match => match.round === currentRound);
-
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-6 text-blue-800">
-        Tips for {familyMember.name} - {getRoundLabel(currentRound)}
+        Tips for {familyMember.name} - {getRoundLabel(roundToUse)}
       </h2>
-      
+
       <div className="space-y-4">
-        {roundMatchesForRender.map(match => {
+        {roundMatches.map(match => {
           const matchIdStr = String(match.id);
           const homeTeam = match.home_team;
           const awayTeam = match.away_team;
           const selectedTipValue = selectedTeams[matchIdStr];
-          
+
           // Determine if home/away team was selected, checking name OR abbreviation
           const isHomeSelected = selectedTipValue && (selectedTipValue === homeTeam.name || selectedTipValue === homeTeam.abbreviation);
           const isAwaySelected = selectedTipValue && (selectedTipValue === awayTeam.name || selectedTipValue === awayTeam.abbreviation);
-          
+
           return (
             <div key={matchIdStr} className="p-4 border rounded-lg bg-gray-50">
               <div className="flex justify-between items-start mb-3">
@@ -114,24 +111,22 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
                 <p className="text-sm text-gray-600">{match.venue}</p>
               </div>
               <div className="flex gap-4">
-                {/* Add onClick handler and cursor-pointer to home team div */}
-                <div 
-                  className={`flex-1 p-3 rounded-lg border cursor-pointer ${ 
-                  isHomeSelected
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
+                <div
+                  className={`flex-1 p-3 rounded-lg border cursor-pointer ${
+                    isHomeSelected
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                   }`}
                   onClick={() => handleTeamSelect(matchIdStr, homeTeam.abbreviation)}
                 >
                   <div className="text-center">{homeTeam.name}</div>
                 </div>
                 <span className="flex items-center text-gray-500">vs</span>
-                {/* Add onClick handler and cursor-pointer to away team div */}
-                <div 
-                  className={`flex-1 p-3 rounded-lg border cursor-pointer ${ 
-                  isAwaySelected
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
+                <div
+                  className={`flex-1 p-3 rounded-lg border cursor-pointer ${
+                    isAwaySelected
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                   }`}
                   onClick={() => handleTeamSelect(matchIdStr, awayTeam.abbreviation)}
                 >
@@ -143,9 +138,9 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
         })}
       </div>
 
-      <button 
-        onClick={handleSubmit} 
-        disabled={saving} 
+      <button
+        onClick={handleSubmit}
+        disabled={saving}
         className="mt-6 w-full py-3 px-4 bg-green-500 text-white font-semibold rounded-lg shadow hover:bg-green-600 transition-colors disabled:opacity-50"
       >
         {saving ? 'Saving...' : 'Save Tips'}

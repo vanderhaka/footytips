@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { Lock } from 'lucide-react';
-import { signIn } from '../lib/auth';
+import { useAuth } from '../contexts';
 
-interface LoginProps {
-  onSuccess: () => void;
-}
-
-export function Login({ onSuccess }: LoginProps) {
+export function Login() {
+  const { signIn } = useAuth();
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,7 +15,6 @@ export function Login({ onSuccess }: LoginProps) {
 
     try {
       await signIn(pin);
-      onSuccess();
     } catch (err) {
       setError('Invalid PIN');
       setPin('');
@@ -47,8 +43,8 @@ export function Login({ onSuccess }: LoginProps) {
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label 
-              htmlFor="pin" 
+            <label
+              htmlFor="pin"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
               Enter 6-digit PIN
@@ -78,7 +74,7 @@ export function Login({ onSuccess }: LoginProps) {
             disabled={loading || pin.length !== 6}
             className={`w-full py-2 px-4 rounded-lg text-white font-medium
               ${loading || pin.length !== 6
-                ? 'bg-blue-400 cursor-not-allowed' 
+                ? 'bg-blue-400 cursor-not-allowed'
                 : 'bg-blue-600 hover:bg-blue-700'
               }`}
           >

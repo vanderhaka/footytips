@@ -1,11 +1,11 @@
 import { Check, X } from 'lucide-react';
-import { FamilyMember } from '../types';
+import { FamilyMember, Match, DatabaseTip } from '../types';
 
 interface TipsSummaryProps {
   title: string;
   tippers: FamilyMember[];
-  matches: any[];
-  roundTips: any[];
+  matches: Match[];
+  roundTips: DatabaseTip[];
 }
 
 export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryProps) {
@@ -147,7 +147,7 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
 }
 
 // Helper function to check tip correctness (similar to RoundConfirmation)
-function isTipCorrectSummary(tip: any, match: any): boolean {
+function isTipCorrectSummary(tip: DatabaseTip, match: Match): boolean {
   if (!match.is_complete || !match.winner) {
     return false;
   }
