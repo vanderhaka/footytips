@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { MapPin, Calendar, AlertCircle, CheckCircle, XCircle, MinusCircle, ChevronDown, ChevronRight, ArrowUpAZ, ArrowDownAZ } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { MapPin, Calendar, AlertCircle, CheckCircle, XCircle, MinusCircle, ChevronDown, ChevronRight, ArrowUpAZ, ArrowDownAZ, Loader2 } from 'lucide-react';
 import { fetchMatches, getTips, fetchTippers } from '../data';
 import { FamilyMember, Match } from '../types';
 import { getRoundLabel } from '../lib/roundLabels';
@@ -10,9 +10,11 @@ export function Season() {
   const [loading, setLoading] = useState(true);
   const [tippers, setTippers] = useState<FamilyMember[]>([]);
   const [roundTips, setRoundTips] = useState<Record<number, any[]>>({});
-  const [sortDesc, setSortDesc] = useState(false); // false: 0 → Finals, true: Finals → 0
+  const [loadingRounds, setLoadingRounds] = useState<Set<number>>(new Set());
+  const [sortDesc, setSortDesc] = useState(false);
   const [openRounds, setOpenRounds] = useState<Set<number>>(new Set());
 
+  // Initial load - matches and tippers only (no tips)
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -22,21 +24,6 @@ export function Season() {
         ]);
         setMatches(matchesData);
         setTippers(tippersData);
-
-        // Get unique rounds
-        const rounds = Array.from(new Set(matchesData.map(m => m.round)));
-        
-        // Load tips for all rounds
-        const tipsPromises = rounds.map(round => getTips(round));
-        const allTips = await Promise.all(tipsPromises);
-        
-        // Create tips map by round
-        const tipsMap = rounds.reduce((acc, round, index) => {
-          acc[round] = allTips[index] || [];
-          return acc;
-        }, {} as Record<number, any[]>);
-        
-        setRoundTips(tipsMap);
         setLoading(false);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -46,12 +33,59 @@ export function Season() {
     loadData();
   }, []);
 
-  // Initialize open rounds once matches are loaded (default: all open)
-  useEffect(() => {
-    if (!matches.length || openRounds.size > 0) return;
-    const uniqueRounds = Array.from(new Set(matches.map(m => m.round)));
-    setOpenRounds(new Set(uniqueRounds));
-  }, [matches]);
+  // Lazy load tips when a round is expanded
+  const loadTipsForRound = useCallback(async (round: number) => {
+    // Skip if already loaded or currently loading
+    if (roundTips[round] !== undefined || loadingRounds.has(round)) {
+      return;
+    }
+
+    setLoadingRounds(prev => new Set(prev).add(round));
+    try {
+      const tips = await getTips(round);
+      setRoundTips(prev => ({ ...prev, [round]: tips || [] }));
+    } catch (error) {
+      console.error(`Error loading tips for round ${round}:`, error);
+      setRoundTips(prev => ({ ...prev, [round]: [] }));
+    } finally {
+      setLoadingRounds(prev => {
+        const next = new Set(prev);
+        next.delete(round);
+        return next;
+      });
+    }
+  }, [roundTips, loadingRounds]);
+
+  // Handle round toggle - load tips on expand
+  const handleRoundToggle = useCallback((round: number) => {
+    const isOpening = !openRounds.has(round);
+
+    setOpenRounds(prev => {
+      const next = new Set(prev);
+      if (next.has(round)) {
+        next.delete(round);
+      } else {
+        next.add(round);
+      }
+      return next;
+    });
+
+    // Load tips if opening and not already loaded
+    if (isOpening && roundTips[round] === undefined) {
+      loadTipsForRound(round);
+    }
+  }, [openRounds, roundTips, loadTipsForRound]);
+
+  // Expand all - load tips for all visible rounds
+  const handleExpandAll = useCallback((rounds: number[]) => {
+    setOpenRounds(new Set(rounds));
+    // Load tips for all rounds that aren't already loaded
+    rounds.forEach(round => {
+      if (roundTips[round] === undefined) {
+        loadTipsForRound(round);
+      }
+    });
+  }, [roundTips, loadTipsForRound]);
 
   if (loading) {
     return (
@@ -102,10 +136,7 @@ export function Season() {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => {
-              const all = new Set(rounds);
-              setOpenRounds(all);
-            }}
+            onClick={() => handleExpandAll(rounds)}
             className="px-3 py-2 rounded border border-gray-300 text-gray-700 hover:bg-gray-50"
           >
             Expand all
@@ -118,105 +149,113 @@ export function Season() {
           </button>
         </div>
       </div>
+
       {rounds.map(round => {
         const roundMatches = matches.filter(m => m.round === round);
+        const isOpen = openRounds.has(round);
+        const isLoadingTips = loadingRounds.has(round);
+        const hasTips = roundTips[round] !== undefined;
+
         return (
           <div key={round} className="bg-white rounded-lg shadow-sm overflow-hidden">
             <button
               type="button"
-              onClick={() => {
-                const next = new Set(openRounds);
-                if (next.has(round)) next.delete(round); else next.add(round);
-                setOpenRounds(next);
-              }}
+              onClick={() => handleRoundToggle(round)}
               className="w-full bg-blue-50 px-6 py-4 border-b flex items-center justify-between text-left"
-              aria-expanded={openRounds.has(round)}
+              aria-expanded={isOpen}
             >
               <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
-                {openRounds.has(round) ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                {isOpen ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
                 {getRoundLabel(round)}
               </h2>
               <span className="text-sm text-blue-900/70">{roundMatches.length} match{roundMatches.length !== 1 ? 'es' : ''}</span>
             </button>
-            {openRounds.has(round) && (
-            <div className="divide-y">
-              {roundMatches.map(match => (
-                <div key={match.id} className="px-6 py-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <div className="text-lg font-semibold text-gray-900">
-                      {match.home_team.name}
-                    </div>
-                    <div className="text-sm text-gray-500 mx-2">vs</div>
-                    <div className="text-lg font-semibold text-gray-900">
-                      {match.away_team.name}
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-center text-gray-600 text-sm">
-                    {match.match_date ? (
-                      <div className="flex items-center gap-2">
-                        <Calendar size={16} />
-                        <span>{formatMatchDateTime(match.match_date)}</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 text-amber-600">
-                        <AlertCircle size={16} />
-                        <span>Date TBC</span>
-                      </div>
-                    )}
-                    <div className="flex items-center gap-2 mt-1">
-                      <MapPin size={16} />
-                      <span>{match.venue}</span>
-                    </div>
-                  </div>
 
-                  {match.is_complete && (
-                    <div className="mt-3 pt-3 border-t">
-                      {match.winner === 'draw' ? (
-                        <div className="flex justify-center items-center gap-2 text-blue-600">
-                          <MinusCircle size={16} />
-                          <span className="font-medium">Draw - All tips correct</span>
+            {isOpen && (
+              <div className="divide-y">
+                {isLoadingTips && !hasTips && (
+                  <div className="px-6 py-4 flex items-center justify-center gap-2 text-gray-500">
+                    <Loader2 className="animate-spin" size={16} />
+                    <span>Loading tips...</span>
+                  </div>
+                )}
+                {roundMatches.map(match => (
+                  <div key={match.id} className="px-6 py-4">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="text-lg font-semibold text-gray-900">
+                        {match.home_team.name}
+                      </div>
+                      <div className="text-sm text-gray-500 mx-2">vs</div>
+                      <div className="text-lg font-semibold text-gray-900">
+                        {match.away_team.name}
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-center text-gray-600 text-sm">
+                      {match.match_date ? (
+                        <div className="flex items-center gap-2">
+                          <Calendar size={16} />
+                          <span>{formatMatchDateTime(match.match_date)}</span>
                         </div>
                       ) : (
-                        <div className="flex justify-between items-start">
-                          <div className="text-left flex items-center gap-2">
-                            {isTeamWinner(match, match.home_team) ? (
-                              <CheckCircle className="text-green-500" size={16} />
-                            ) : (
-                              <XCircle className="text-red-500" size={16} />
-                            )}
-                            {getTippersByTeam(match.id, match.home_team, round) && (
-                              <div className={`px-3 py-1 rounded-full text-sm ${
-                                isTeamWinner(match, match.home_team)
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {getTippersByTeam(match.id, match.home_team, round)}
-                              </div>
-                            )}
-                          </div>
-                          <div className="text-right flex items-center gap-2">
-                            {getTippersByTeam(match.id, match.away_team, round) && (
-                              <div className={`px-3 py-1 rounded-full text-sm ${
-                                isTeamWinner(match, match.away_team)
-                                  ? 'bg-green-100 text-green-800'
-                                  : 'bg-red-100 text-red-800'
-                              }`}>
-                                {getTippersByTeam(match.id, match.away_team, round)}
-                              </div>
-                            )}
-                            {isTeamWinner(match, match.away_team) ? (
-                              <CheckCircle className="text-green-500" size={16} />
-                            ) : (
-                              <XCircle className="text-red-500" size={16} />
-                            )}
-                          </div>
+                        <div className="flex items-center gap-2 text-amber-600">
+                          <AlertCircle size={16} />
+                          <span>Date TBC</span>
                         </div>
                       )}
+                      <div className="flex items-center gap-2 mt-1">
+                        <MapPin size={16} />
+                        <span>{match.venue}</span>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
+
+                    {match.is_complete && hasTips && (
+                      <div className="mt-3 pt-3 border-t">
+                        {match.winner === 'draw' ? (
+                          <div className="flex justify-center items-center gap-2 text-blue-600">
+                            <MinusCircle size={16} />
+                            <span className="font-medium">Draw - All tips correct</span>
+                          </div>
+                        ) : (
+                          <div className="flex justify-between items-start">
+                            <div className="text-left flex items-center gap-2">
+                              {isTeamWinner(match, match.home_team) ? (
+                                <CheckCircle className="text-green-500" size={16} />
+                              ) : (
+                                <XCircle className="text-red-500" size={16} />
+                              )}
+                              {getTippersByTeam(match.id, match.home_team, round) && (
+                                <div className={`px-3 py-1 rounded-full text-sm ${
+                                  isTeamWinner(match, match.home_team)
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {getTippersByTeam(match.id, match.home_team, round)}
+                                </div>
+                              )}
+                            </div>
+                            <div className="text-right flex items-center gap-2">
+                              {getTippersByTeam(match.id, match.away_team, round) && (
+                                <div className={`px-3 py-1 rounded-full text-sm ${
+                                  isTeamWinner(match, match.away_team)
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {getTippersByTeam(match.id, match.away_team, round)}
+                                </div>
+                              )}
+                              {isTeamWinner(match, match.away_team) ? (
+                                <CheckCircle className="text-green-500" size={16} />
+                              ) : (
+                                <XCircle className="text-red-500" size={16} />
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         );
