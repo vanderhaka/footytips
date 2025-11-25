@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle } from 'lucide-react';
+import { CheckCircle, AlertCircle } from 'lucide-react';
 import { getTips, fetchMatches } from '../data';
-import { FamilyMember } from '../types';
+import { FamilyMember, Match, DatabaseTip } from '../types';
 
 interface RoundConfirmationProps {
   round: number;
@@ -9,25 +9,42 @@ interface RoundConfirmationProps {
 }
 
 export function RoundConfirmation({ round, tippers }: RoundConfirmationProps) {
-  const [matches, setMatches] = useState<any[]>([]);
-  const [tips, setTips] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
+  const [tips, setTips] = useState<DatabaseTip[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadData = async () => {
-      const [matchesData, tipsData] = await Promise.all([
-        fetchMatches(),
-        getTips(round)
-      ]);
-      setMatches(matchesData);
-      setTips(tipsData);
-      setLoading(false);
+      try {
+        const [matchesData, tipsData] = await Promise.all([
+          fetchMatches(),
+          getTips(round)
+        ]);
+        setMatches(matchesData);
+        setTips(tipsData || []);
+        setError(null);
+      } catch (err) {
+        console.error('Error loading confirmation data:', err);
+        setError('Failed to load data. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     };
     loadData();
   }, [round]);
 
   if (loading) {
     return <div className="text-center py-4">Loading matches and tips...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-600 flex flex-col items-center gap-2">
+        <AlertCircle size={24} />
+        <p>{error}</p>
+      </div>
+    );
   }
 
   const roundMatches = matches.filter(match => match.round === round);

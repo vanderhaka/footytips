@@ -3,7 +3,7 @@ import { History, Check, Loader2 } from 'lucide-react';
 import { TipEntry } from './TipEntry';
 import { RoundConfirmation } from './RoundConfirmation';
 import { fetchMatches, getTips } from '../data';
-import { FamilyMember, Match } from '../types';
+import { FamilyMember, Match, DatabaseTip } from '../types';
 import { getRoundLabel } from '../lib/roundLabels';
 
 interface PastRoundsProps {
@@ -17,7 +17,7 @@ export function PastRounds({ tippers }: PastRoundsProps) {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingTips, setLoadingTips] = useState(false);
-  const [roundTips, setRoundTips] = useState<any[]>([]);
+  const [roundTips, setRoundTips] = useState<DatabaseTip[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   // Cache for round completion status (lazy loaded)
   const [roundCompletionCache, setRoundCompletionCache] = useState<Record<number, boolean>>({});
@@ -77,7 +77,7 @@ export function PastRounds({ tippers }: PastRoundsProps) {
   }, [selectedRound, loadTipsForRound, roundTips]);
 
   // Check if all members have entered tips for a round
-  const checkRoundComplete = useCallback((round: number, tips: any[]): boolean => {
+  const checkRoundComplete = useCallback((round: number, tips: DatabaseTip[]): boolean => {
     if (!Array.isArray(matches)) return false;
     const roundMatches = matches.filter(m => m.round === round);
     if (roundMatches.length === 0) return false;

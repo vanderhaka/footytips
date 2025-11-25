@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trophy, Check, Loader2, AlertCircle } from 'lucide-react';
-import { fetchMatches, updateMatchResult, calculatePoints } from '../data';
+import { fetchMatches, updateMatchResult } from '../data';
 import { Match } from '../types';
 import { GameStats } from './GameStats';
 import { getRoundLabel } from '../lib/roundLabels';
@@ -38,20 +38,8 @@ export function Admin() {
       setSavingMatch(matchId);
       const updatedMatch = await updateMatchResult(matchId, winner);
       
-      // Update local matches state
-      setMatches(prev => prev.map(m => 
-        m.id === matchId ? { 
-          ...m, 
-          winner: updatedMatch.winner,
-          is_complete: updatedMatch.is_complete
-        } : m
-      ));
-      
-      // Calculate points for all rounds since a result can affect overall standings
+      // Update local state optimistically and refresh from server
       setCalculatingPoints(true);
-      await calculatePoints();
-      
-      // Refresh matches to get latest state
       const updatedMatches = await fetchMatches();
       setMatches(updatedMatches);
       setEditingMatch(null);

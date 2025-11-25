@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MapPin, Calendar, AlertCircle, CheckCircle, XCircle, MinusCircle, ChevronDown, ChevronRight, ArrowUpAZ, ArrowDownAZ, Loader2 } from 'lucide-react';
 import { fetchMatches, getTips, fetchTippers } from '../data';
-import { FamilyMember, Match } from '../types';
+import { FamilyMember, Match, DatabaseTip } from '../types';
 import { getRoundLabel } from '../lib/roundLabels';
 import { formatMatchDateTime } from '../lib/formatDate';
 
@@ -9,7 +9,7 @@ export function Season() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [tippers, setTippers] = useState<FamilyMember[]>([]);
-  const [roundTips, setRoundTips] = useState<Record<number, any[]>>({});
+  const [roundTips, setRoundTips] = useState<Record<number, DatabaseTip[]>>({});
   const [loadingRounds, setLoadingRounds] = useState<Set<number>>(new Set());
   const [sortDesc, setSortDesc] = useState(false);
   const [openRounds, setOpenRounds] = useState<Set<number>>(new Set());

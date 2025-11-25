@@ -67,7 +67,9 @@ export function Navigation({ currentView, onViewChange, isAuthenticated }: Navig
 
   const handleSignOut = async () => {
     await signOut();
-    window.location.reload();
+    // Navigate to overview after sign out instead of reloading
+    onViewChange('tips');
+    setIsMobileMenuOpen(false);
   };
 
   const handleViewChange = (view: ViewType) => {

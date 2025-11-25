@@ -27,17 +27,29 @@ export function FixtureList({ matches, currentRound, completedMatches }: Fixture
     [matches, currentRound]
   );
 
-  const getTeamForm = (teamName: string): TeamForm[] => {
+  const getTeamForm = (teamName: string, teamAbbreviation: string): TeamForm[] => {
+    const isTeamMatch = (m: Match) =>
+      m.home_team.name === teamName ||
+      m.home_team.abbreviation === teamAbbreviation ||
+      m.away_team.name === teamName ||
+      m.away_team.abbreviation === teamAbbreviation;
+
+    const isHomeTeam = (m: Match) =>
+      m.home_team.name === teamName || m.home_team.abbreviation === teamAbbreviation;
+
+    const isTeamWinner = (m: Match) =>
+      m.winner === teamName || m.winner === teamAbbreviation;
+
     const teamMatches = completedMatches
-      .filter(m => m.home_team.name === teamName || m.away_team.name === teamName)
+      .filter(isTeamMatch)
       .sort((a, b) => new Date(b.match_date || '').getTime() - new Date(a.match_date || '').getTime())
       .slice(0, 5);
 
     return teamMatches.map(match => ({
       id: match.id,
-      win: match.winner === 'draw' ? null : match.winner === teamName,
+      win: match.winner === 'draw' ? null : isTeamWinner(match),
       round: match.round,
-      location: match.home_team.name === teamName ? 'home' : 'away'
+      location: isHomeTeam(match) ? 'home' : 'away'
     }));
   };
 
@@ -58,8 +70,8 @@ export function FixtureList({ matches, currentRound, completedMatches }: Fixture
       ) : (
         <div className="divide-y">
           {currentRoundMatches.map(match => {
-            const homeForm = getTeamForm(match.home_team.name);
-            const awayForm = getTeamForm(match.away_team.name);
+            const homeForm = getTeamForm(match.home_team.name, match.home_team.abbreviation);
+            const awayForm = getTeamForm(match.away_team.name, match.away_team.abbreviation);
 
             return (
               <div key={match.id} className="px-4 md:px-6 py-3 md:py-4">
