@@ -1,27 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Trophy, Check, Loader2, AlertCircle } from 'lucide-react';
 import { fetchMatches, updateMatchResult, calculatePoints } from '../data';
+import { Match } from '../types';
 import { GameStats } from './GameStats';
-
-interface Match {
-  id: string;
-  round: number;
-  venue: string;
-  match_date: string;
-  home_score: number | null;
-  away_score: number | null;
-  winner: string | null;
-  is_complete: boolean;
-  created_at: string;
-  home_team: {
-    name: string;
-    abbreviation: string;
-  };
-  away_team: {
-    name: string;
-    abbreviation: string;
-  };
-}
+import { getRoundLabel } from '../lib/roundLabels';
+import { formatMatchDateTime } from '../lib/formatDate';
 
 export function Admin() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -118,7 +101,7 @@ export function Admin() {
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
             >
-              Round {round}
+              {getRoundLabel(round)}
             </button>
           ))}
         </div>
@@ -132,15 +115,7 @@ export function Admin() {
               <div key={match.id} className="p-4 border rounded-lg">
                 <div className="flex justify-between items-center mb-4">
                   <p className="text-sm text-gray-600">
-                    {new Date(match.match_date).toLocaleString('en-AU', {
-                      weekday: 'long',
-                      day: 'numeric',
-                      month: 'long',
-                      hour: 'numeric',
-                      minute: 'numeric',
-                      hour12: true,
-                      timeZone: 'Australia/Melbourne'
-                    })}
+                    {formatMatchDateTime(match.match_date)}
                   </p>
                   <p className="text-sm text-gray-600">{match.venue}</p>
                 </div>

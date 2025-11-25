@@ -32,9 +32,10 @@ export function RoundConfirmation({ round, tippers }: RoundConfirmationProps) {
 
   const roundMatches = matches.filter(match => match.round === round);
 
-  const getTipForGame = (tipperId: string, matchId: string) => {
+  const getTipForGame = (tipperId: string, matchId: string | number) => {
+    const matchIdStr = String(matchId);
     const tip = tips.find(
-      t => t.tipper_id === tipperId && t.match_id === matchId
+      t => t.tipper_id === tipperId && String(t.match_id) === matchIdStr
     );
     return tip?.team_tipped || '-';
   };
@@ -42,7 +43,7 @@ export function RoundConfirmation({ round, tippers }: RoundConfirmationProps) {
   const allTipsEntered = tippers.every(tipper =>
     roundMatches.every(match =>
       tips.some(
-        tip => tip.tipper_id === tipper.id && tip.match_id === match.id
+        tip => tip.tipper_id === tipper.id && String(tip.match_id) === String(match.id)
       )
     )
   );

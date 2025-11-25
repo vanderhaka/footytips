@@ -1,27 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { MapPin, Calendar, AlertCircle, CheckCircle, XCircle, ChevronDown, ChevronRight, ArrowUpAZ, ArrowDownAZ } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, Calendar, AlertCircle, CheckCircle, XCircle, MinusCircle, ChevronDown, ChevronRight, ArrowUpAZ, ArrowDownAZ } from 'lucide-react';
 import { fetchMatches, getTips, fetchTippers } from '../data';
-import { FamilyMember } from '../types';
+import { FamilyMember, Match } from '../types';
 import { getRoundLabel } from '../lib/roundLabels';
-
-interface Match {
-  id: string;
-  round: number;
-  home_team: {
-    name: string;
-    abbreviation: string;
-  };
-  away_team: {
-    name: string;
-    abbreviation: string;
-  };
-  venue: string;
-  match_date: string | null;
-  home_score: number | null;
-  away_score: number | null;
-  winner: string | null;
-  is_complete: boolean;
-}
+import { formatMatchDateTime } from '../lib/formatDate';
 
 export function Season() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -82,33 +64,26 @@ export function Season() {
   let rounds = Array.from(new Set(matches.map(m => m.round))).sort((a, b) => a - b);
   if (sortDesc) rounds = rounds.reverse();
 
-  // getRoundLabel imported from shared util
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Date TBC';
-    return new Date(dateString).toLocaleDateString('en-AU', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    });
-  };
-
   const getTippersByTeam = (matchId: string, team: { name: string, abbreviation: string }, round: number) => {
     const matchTips = roundTips[round] || [];
+    const matchIdStr = String(matchId);
     const tipperIds = matchTips
-      .filter(tip => 
-        tip.match_id === matchId && 
+      .filter(tip =>
+        String(tip.match_id) === matchIdStr &&
         (tip.team_tipped === team.name || tip.team_tipped === team.abbreviation)
       )
       .map(tip => tip.tipper_id);
-    
+
     return tippers
       .filter(tipper => tipperIds.includes(tipper.id))
       .map(tipper => tipper.name)
       .join(', ');
+  };
+
+  const isTeamWinner = (match: Match, team: { name: string, abbreviation: string }) => {
+    if (!match.winner) return false;
+    if (match.winner === 'draw') return false;
+    return match.winner === team.name || match.winner === team.abbreviation;
   };
 
   return (
@@ -180,7 +155,7 @@ export function Season() {
                     {match.match_date ? (
                       <div className="flex items-center gap-2">
                         <Calendar size={16} />
-                        <span>{formatDate(match.match_date)}</span>
+                        <span>{formatMatchDateTime(match.match_date)}</span>
                       </div>
                     ) : (
                       <div className="flex items-center gap-2 text-amber-600">
@@ -193,43 +168,50 @@ export function Season() {
                       <span>{match.venue}</span>
                     </div>
                   </div>
-                  
+
                   {match.is_complete && (
                     <div className="mt-3 pt-3 border-t">
-                      <div className="flex justify-between items-start">
-                        <div className="text-left flex items-center gap-2">
-                          {match.winner && (match.winner === match.home_team.name || match.winner === match.home_team.abbreviation) ? (
-                            <CheckCircle className="text-green-500" size={16} />
-                          ) : (
-                            <XCircle className="text-red-500" size={16} />
-                          )}
-                          {getTippersByTeam(match.id, match.home_team, round) && (
-                            <div className={`px-3 py-1 rounded-full text-sm ${
-                              match.winner && (match.winner === match.home_team.name || match.winner === match.home_team.abbreviation)
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {getTippersByTeam(match.id, match.home_team, round)}
-                            </div>
-                          )}
+                      {match.winner === 'draw' ? (
+                        <div className="flex justify-center items-center gap-2 text-blue-600">
+                          <MinusCircle size={16} />
+                          <span className="font-medium">Draw - All tips correct</span>
                         </div>
-                        <div className="text-right flex items-center gap-2">
-                          {getTippersByTeam(match.id, match.away_team, round) && (
-                            <div className={`px-3 py-1 rounded-full text-sm ${
-                              match.winner && (match.winner === match.away_team.name || match.winner === match.away_team.abbreviation)
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-red-100 text-red-800'
-                            }`}>
-                              {getTippersByTeam(match.id, match.away_team, round)}
-                            </div>
-                          )}
-                          {match.winner && (match.winner === match.away_team.name || match.winner === match.away_team.abbreviation) ? (
-                            <CheckCircle className="text-green-500" size={16} />
-                          ) : (
-                            <XCircle className="text-red-500" size={16} />
-                          )}
+                      ) : (
+                        <div className="flex justify-between items-start">
+                          <div className="text-left flex items-center gap-2">
+                            {isTeamWinner(match, match.home_team) ? (
+                              <CheckCircle className="text-green-500" size={16} />
+                            ) : (
+                              <XCircle className="text-red-500" size={16} />
+                            )}
+                            {getTippersByTeam(match.id, match.home_team, round) && (
+                              <div className={`px-3 py-1 rounded-full text-sm ${
+                                isTeamWinner(match, match.home_team)
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {getTippersByTeam(match.id, match.home_team, round)}
+                              </div>
+                            )}
+                          </div>
+                          <div className="text-right flex items-center gap-2">
+                            {getTippersByTeam(match.id, match.away_team, round) && (
+                              <div className={`px-3 py-1 rounded-full text-sm ${
+                                isTeamWinner(match, match.away_team)
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {getTippersByTeam(match.id, match.away_team, round)}
+                              </div>
+                            )}
+                            {isTeamWinner(match, match.away_team) ? (
+                              <CheckCircle className="text-green-500" size={16} />
+                            ) : (
+                              <XCircle className="text-red-500" size={16} />
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
                   )}
                 </div>

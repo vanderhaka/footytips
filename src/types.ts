@@ -6,6 +6,37 @@ export interface FamilyMember {
   created_at?: string;
 }
 
+export interface Team {
+  name: string;
+  abbreviation: string;
+}
+
+export interface Match {
+  id: string;
+  round: number;
+  venue: string;
+  match_date: string | null;
+  home_score: number | null;
+  away_score: number | null;
+  winner: string | null;
+  is_complete: boolean;
+  created_at: string;
+  home_team: Team;
+  away_team: Team;
+}
+
+export interface DatabaseTip {
+  id: number;
+  tipper_id: string;
+  match_id: number;
+  round: number;
+  team_tipped: string;
+  is_correct: boolean | null;
+  created_at: string;
+  match?: Match;
+}
+
+// Legacy interfaces (kept for backward compatibility)
 export interface Game {
   id: string;
   homeTeam: string;

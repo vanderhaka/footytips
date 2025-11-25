@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle } from 'lucide-react';
-import { FamilyMember } from '../types';
+import { FamilyMember, Match } from '../types';
 import { saveTip, fetchMatches, getCurrentRound, getTips } from '../data';
+import { formatMatchDateTime } from '../lib/formatDate';
+import { getRoundLabel } from '../lib/roundLabels';
 
 interface TipEntryProps {
   familyMember: FamilyMember;
@@ -10,24 +11,14 @@ interface TipEntryProps {
 }
 
 export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEntryProps) {
-  // +++ DEBUG: Log props on initial render +++
-  useEffect(() => {
-    console.log('>>> TipEntry Mounted - Props Received <<<', {
-      familyMemberName: familyMember.name,
-      selectedRoundProp: selectedRound
-    });
-  }, [familyMember, selectedRound]); // Log only when these props change
-
   const [selectedTeams, setSelectedTeams] = useState<Record<string, string>>({});
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentRound, setCurrentRound] = useState<number>(0);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
-      // +++ DEBUG: Log data loading start +++
-      console.log('>>> TipEntry loadData Start <<<');
       try {
         const [matchesData, round] = await Promise.all([
           fetchMatches(),
@@ -37,32 +28,15 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
         const roundToUse = selectedRound !== undefined ? selectedRound : round;
         setCurrentRound(roundToUse);
 
-        // +++ DEBUG: Check matches for the target round +++
-        const roundMatches = matchesData.filter(m => m.round === roundToUse);
-        console.log(`>>> TipEntry loadData - Round ${roundToUse} Matches <<<`, {
-          count: roundMatches.length,
-          matchIds: roundMatches.map(m => m.id),
-          includes217: roundMatches.some(m => String(m.id) === '217')
-        });
-
         // Load existing tips
         const tips = await getTips(roundToUse);
         const existingTips = tips?.reduce((acc: Record<string, string>, tip: any) => {
           if (tip.tipper_id === familyMember.id) {
-            // Ensure match_id is stored as string key
             acc[String(tip.match_id)] = tip.team_tipped;
           }
           return acc;
         }, {});
         setSelectedTeams(existingTips || {});
-
-        // +++ DEBUG: Log loaded tips +++
-        console.log(`>>> TipEntry loadData - Round ${roundToUse} Tips Loaded for ${familyMember.name} <<<`, {
-          tipCount: Object.keys(existingTips || {}).length,
-          tipsMap: existingTips,
-          tipFor217: existingTips?.['217'] || 'Not Found' // Check specifically for 217
-        });
-
         setLoading(false);
       } catch (error) {
         console.error('Error loading data:', error);
@@ -70,9 +44,8 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
       }
     };
     loadData();
-  }, [selectedRound, familyMember.id]); // Ensure dependency array is present
+  }, [selectedRound, familyMember.id]);
 
-  // Add back handleTeamSelect function
   const handleTeamSelect = (matchId: string, team: string) => {
     setSelectedTeams(prev => ({
       ...prev,
@@ -113,32 +86,12 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
     return <div className="text-center py-4">Loading matches...</div>;
   }
 
-  // Filter matches again for rendering (ensure it uses the state variable)
   const roundMatchesForRender = matches.filter(match => match.round === currentRound);
-
-  const formatMatchDateTime = (dateString: string | null) => {
-    if (!dateString) return 'Date TBC';
-    const date = new Date(dateString);
-    
-    // The dates are stored in UTC but represent AEST/AEDT times
-    // We need to display them as-is without timezone conversion
-    const options: Intl.DateTimeFormatOptions = {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true,
-      timeZone: 'Australia/Melbourne'
-    };
-    
-    return date.toLocaleString('en-AU', options);
-  };
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <h2 className="text-2xl font-bold mb-6 text-blue-800">
-        Tips for {familyMember.name} - Round {currentRound}
+        Tips for {familyMember.name} - {getRoundLabel(currentRound)}
       </h2>
       
       <div className="space-y-4">

@@ -4,6 +4,7 @@ import { TipEntry } from './TipEntry';
 import { RoundConfirmation } from './RoundConfirmation';
 import { fetchMatches, getTips } from '../data';
 import { FamilyMember } from '../types';
+import { getRoundLabel } from '../lib/roundLabels';
 
 interface PastRoundsProps {
   tippers: FamilyMember[];
@@ -119,15 +120,15 @@ export function PastRounds({ tippers }: PastRoundsProps) {
               <button
                 key={round}
                 onClick={() => setSelectedRound(round)}
-                className={`p-4 text-left rounded-lg transition-all ${ 
-                  complete 
-                    ? 'bg-green-50 hover:bg-green-100' 
+                className={`p-4 text-left rounded-lg transition-all ${
+                  complete
+                    ? 'bg-green-50 hover:bg-green-100'
                     : 'bg-gray-50 hover:bg-gray-100'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="font-medium">Round {round}</span>
+                    <span className="font-medium">{getRoundLabel(round)}</span>
                     <span className="text-sm text-gray-500 ml-2">
                       ({roundMatches.length} games)
                     </span>
@@ -147,7 +148,7 @@ export function PastRounds({ tippers }: PastRoundsProps) {
   return (
     <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
       <div className="mb-6 flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800">Round {selectedRound}</h2>
+        <h2 className="text-2xl font-bold text-gray-800">{getRoundLabel(selectedRound)}</h2>
         <button
           onClick={() => {
             setSelectedRound(null);
@@ -186,8 +187,8 @@ export function PastRounds({ tippers }: PastRoundsProps) {
         </div>
       )}
 
-      {selectedMemberId && (
-        <TipEntry 
+      {selectedMemberId && tippers.find(m => m.id === selectedMemberId) && (
+        <TipEntry
           familyMember={tippers.find(m => m.id === selectedMemberId)!}
           onTipsSubmitted={handleTipsSubmitted}
           selectedRound={selectedRound}

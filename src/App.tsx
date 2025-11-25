@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Check, Calendar, MapPin, AlertCircle } from 'lucide-react';
 import { Navigation } from './components/Navigation';
 import { TipEntry } from './components/TipEntry';
@@ -11,8 +11,9 @@ import { Login } from './components/Login';
 import { TipsSummary } from './components/TipsSummary';
 import { getTips, fetchTippers, getCurrentRound, fetchMatches } from './data';
 import { getRoundLabel } from './lib/roundLabels';
+import { formatMatchDateTime } from './lib/formatDate';
 import { getSession } from './lib/auth';
-import { FamilyMember } from './types';
+import { FamilyMember, Match } from './types';
 
 function App() {
   const [currentView, setCurrentView] = useState<'tips' | 'season' | 'past' | 'admin' | 'enter_tips'>('tips');
@@ -22,7 +23,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [roundTips, setRoundTips] = useState<any[]>([]);
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [previousRoundTips, setPreviousRoundTips] = useState<any[]>([]);
@@ -86,31 +87,32 @@ function App() {
 
   const hasMemberEnteredTips = (memberId: string) => {
     if (!Array.isArray(roundTips)) return false;
-    return roundTips.some(tip => 
-      tip.tipper_id === memberId && 
-      tip.round === currentRound
-    );
+    return roundTips.some(tip => tip.tipper_id === memberId);
   };
 
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Date TBC';
-    return new Date(dateString).toLocaleDateString('en-AU', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    });
-  };
+  // Memoized filtered data to avoid recalculating on every render
+  const completedMatches = useMemo(
+    () => matches.filter(m => m.is_complete),
+    [matches]
+  );
 
-  const completedMatches = matches.filter(m => m.is_complete);
+  const currentRoundMatches = useMemo(
+    () => matches.filter(m => m.round === currentRound),
+    [matches, currentRound]
+  );
+
+  const previousRound = currentRound > 1 ? currentRound - 1 : null;
+
+  const previousRoundMatches = useMemo(
+    () => (previousRound ? matches.filter(m => m.round === previousRound) : []),
+    [matches, previousRound]
+  );
 
   const getTeamForm = (teamName: string) => {
     const teamMatches = completedMatches
       .filter(m => m.home_team.name === teamName || m.away_team.name === teamName)
-      .sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()) // Sort recent first
-      .slice(0, 5); // Get last 5
+      .sort((a, b) => new Date(b.match_date || '').getTime() - new Date(a.match_date || '').getTime())
+      .slice(0, 5);
 
     return teamMatches.map(match => ({
       id: match.id,
@@ -127,10 +129,6 @@ function App() {
       </div>
     );
   }
-
-  const currentRoundMatches = matches.filter(m => m.round === currentRound);
-  const previousRound = currentRound > 1 ? currentRound - 1 : null;
-  const previousRoundMatches = previousRound ? matches.filter(m => m.round === previousRound) : [];
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -191,7 +189,7 @@ function App() {
                 </div>
               )}
 
-              {selectedMemberId && (
+              {selectedMemberId && tippers.find(m => m.id === selectedMemberId) && (
                 <TipEntry
                   familyMember={tippers.find(m => m.id === selectedMemberId)!}
                   onTipsSubmitted={handleTipsSubmitted}
@@ -433,7 +431,7 @@ function App() {
                             {match.match_date ? (
                               <div className="flex items-center gap-2">
                                 <Calendar size={16} />
-                                <span>{formatDate(match.match_date)}</span>
+                                <span>{formatMatchDateTime(match.match_date)}</span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-2 text-amber-600">
