@@ -13,7 +13,11 @@ export function FixtureView({ currentRound, currentRoundMatches, completedMatche
   const getTeamForm = (teamName: string) => {
     const teamMatches = completedMatches
       .filter(m => m.home_team.name === teamName || m.away_team.name === teamName)
-      .sort((a, b) => new Date(b.match_date!).getTime() - new Date(a.match_date!).getTime())
+      .sort((a, b) => {
+        const dateA = a.match_date ? new Date(a.match_date).getTime() : 0;
+        const dateB = b.match_date ? new Date(b.match_date).getTime() : 0;
+        return dateB - dateA;
+      })
       .slice(0, 5);
 
     return teamMatches.map(match => ({
