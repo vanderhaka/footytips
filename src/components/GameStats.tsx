@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchMatches } from '../data';
-import { supabase } from '../lib/supabase';
+import { fetchMatches, fetchTippers } from '../data';
 
 export function GameStats() {
   const [stats, setStats] = useState({
@@ -18,18 +17,11 @@ export function GameStats() {
         const matches = await fetchMatches();
         const completed = matches.filter(m => m.is_complete).length;
         
-        // Get total correct tips from the tipper_points view
-        const { data: tippers } = await supabase
-          .from('tipper_points')
-          .select('total_points');
-        
-        // Calculate total correct tips safely
-        let totalCorrectTips = 0;
-        if (tippers && tippers.length > 0) {
-          totalCorrectTips = tippers.reduce((sum, tipper) => {
-            return sum + (tipper.total_points || 0);
-          }, 0);
-        }
+        // Get season-filtered tipper totals
+        const tippers = await fetchTippers();
+        const totalCorrectTips = tippers.reduce((sum, tipper) => {
+          return sum + (tipper.total_points || 0);
+        }, 0);
         
         setStats({
           totalGames: matches.length,

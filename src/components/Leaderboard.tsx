@@ -93,7 +93,7 @@ export function Leaderboard({ tippers, matches }: LeaderboardProps) {
     <div className="w-full p-4 bg-white rounded-lg shadow-lg overflow-x-auto relative">
       <div className="flex items-center gap-2 mb-4">
         <Trophy className="text-yellow-500" size={20} />
-        <h2 className="text-xl font-bold text-gray-800">Leaderboard</h2>
+        <h2 className="text-xl font-bold text-gray-800">{matches.length > 0 ? matches[0].season : new Date().getFullYear()} Leaderboard</h2>
       </div>
 
       {loadingScores ? (

@@ -108,24 +108,50 @@ export const saveTip = async (tip: {
 };
 
 export const fetchTippers = async () => {
-  // Use the tipper_points view which automatically calculates points
-  const { data, error } = await supabase
-    .from('tipper_points')
-    .select('*')
-    .order('total_points', { ascending: false });
+  const season = await getCurrentSeason();
+
+  // Get all tippers
+  const { data: tippers, error } = await supabase
+    .from('tippers')
+    .select('*');
 
   if (error) {
     console.error('Error fetching tippers:', error);
     return [];
   }
 
-  return data.map(tipper => ({
-    id: tipper.tipper_id,
-    name: tipper.name,
-    total_points: tipper.total_points,
-    avatar_url: tipper.avatar_url,
-    created_at: tipper.created_at
-  }));
+  // Get season match IDs for filtering tips
+  const { data: seasonMatches } = await supabase
+    .from('matches')
+    .select('id')
+    .eq('season', season);
+
+  const matchIds = seasonMatches?.map(m => m.id) || [];
+
+  // Get correct tips for this season
+  const { data: tips } = matchIds.length > 0
+    ? await supabase
+        .from('tips')
+        .select('tipper_id, is_correct')
+        .in('match_id', matchIds)
+        .eq('is_correct', true)
+    : { data: [] };
+
+  // Count correct tips per tipper
+  const pointsByTipper: Record<string, number> = {};
+  (tips || []).forEach(tip => {
+    pointsByTipper[tip.tipper_id] = (pointsByTipper[tip.tipper_id] || 0) + 1;
+  });
+
+  return tippers
+    .map(tipper => ({
+      id: tipper.id,
+      name: tipper.name,
+      total_points: pointsByTipper[tipper.id] || 0,
+      avatar_url: tipper.avatar_url,
+      created_at: tipper.created_at
+    }))
+    .sort((a, b) => b.total_points - a.total_points);
 };
 
 export const fetchMatches = async (): Promise<Match[]> => {
