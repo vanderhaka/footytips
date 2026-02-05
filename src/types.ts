@@ -14,6 +14,7 @@ export interface Team {
 export interface Match {
   id: string;
   round: number;
+  season: number;
   venue: string;
   match_date: string | null;
   home_score: number | null;

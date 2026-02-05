@@ -1,17 +1,67 @@
 import { supabase } from './lib/supabase';
 import { Match, Team } from './types';
 
+// Shape of the raw Supabase join response for matches
+interface RawMatchRow {
+  id: string;
+  round: number;
+  season: number;
+  venue: string;
+  match_date: string | null;
+  home_score: number | null;
+  away_score: number | null;
+  winner: string | null;
+  is_complete: boolean;
+  created_at: string;
+  home_team: Team;
+  away_team: Team;
+}
+
+// Internal season cache - determined once from upcoming matches
+let _currentSeason: number | null = null;
+
+export const getCurrentSeason = async (): Promise<number> => {
+  if (_currentSeason !== null) return _currentSeason;
+
+  const now = new Date();
+  const { data: upcoming } = await supabase
+    .from('matches')
+    .select('season')
+    .gte('match_date', now.toISOString())
+    .order('match_date')
+    .limit(1);
+
+  if (upcoming?.length) {
+    _currentSeason = upcoming[0].season;
+    return _currentSeason;
+  }
+
+  // No upcoming matches - use the most recent match's season
+  const { data: latest } = await supabase
+    .from('matches')
+    .select('season')
+    .not('match_date', 'is', null)
+    .order('match_date', { ascending: false })
+    .limit(1);
+
+  _currentSeason = latest?.[0]?.season || new Date().getFullYear();
+  return _currentSeason;
+};
+
 export const getTips = async (round: number) => {
-  // Get match IDs for this round
+  const season = await getCurrentSeason();
+
+  // Get match IDs for this round in the current season
   const { data: matchesData } = await supabase
     .from('matches')
     .select('id')
-    .eq('round', round);
-    
+    .eq('round', round)
+    .eq('season', season);
+
   if (!matchesData?.length) return [];
-  
+
   const matchIds = matchesData.map(m => m.id);
-  
+
   // Then fetch tips for these matches
   const { data, error } = await supabase
     .from('tips')
@@ -25,12 +75,12 @@ export const getTips = async (round: number) => {
       )
     `)
     .in('match_id', matchIds);
-  
+
   if (error) {
     console.error('Error fetching tips:', error);
     return [];
   }
-  
+
   return data;
 };
 
@@ -63,12 +113,12 @@ export const fetchTippers = async () => {
     .from('tipper_points')
     .select('*')
     .order('total_points', { ascending: false });
-  
+
   if (error) {
     console.error('Error fetching tippers:', error);
     return [];
   }
-  
+
   return data.map(tipper => ({
     id: tipper.tipper_id,
     name: tipper.name,
@@ -79,11 +129,14 @@ export const fetchTippers = async () => {
 };
 
 export const fetchMatches = async (): Promise<Match[]> => {
+  const season = await getCurrentSeason();
+
   const { data, error } = await supabase
     .from('matches')
     .select(`
       id,
       round,
+      season,
       venue,
       match_date,
       home_score,
@@ -94,62 +147,61 @@ export const fetchMatches = async (): Promise<Match[]> => {
       home_team:home_team_id(name, abbreviation),
       away_team:away_team_id(name, abbreviation)
     `)
+    .eq('season', season)
     .order('round')
     .order('match_date');
-  
+
   if (error) {
     console.error('Error fetching matches:', error);
     return [];
   }
-  
-  return (data || []).map(match => {
-    const homeTeam = match.home_team as unknown as Team;
-    const awayTeam = match.away_team as unknown as Team;
-    
-    return {
-      ...match,
-      home_team: {
-        name: homeTeam?.name || '',
-        abbreviation: homeTeam?.abbreviation || ''
-      },
-      away_team: {
-        name: awayTeam?.name || '',
-        abbreviation: awayTeam?.abbreviation || ''
-      }
-    };
-  });
+
+  const rows = (data || []) as RawMatchRow[];
+  return rows.map(match => ({
+    ...match,
+    home_team: {
+      name: match.home_team?.name || '',
+      abbreviation: match.home_team?.abbreviation || ''
+    },
+    away_team: {
+      name: match.away_team?.name || '',
+      abbreviation: match.away_team?.abbreviation || ''
+    }
+  }));
 };
 
 export const getCurrentRound = async (): Promise<number> => {
+  const season = await getCurrentSeason();
   const now = new Date();
-  // Get matches for the next 7 days
-  const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-  
+
+  // First try: find the next upcoming match in this season
   const { data: upcomingMatches, error } = await supabase
     .from('matches')
     .select('round')
+    .eq('season', season)
     .gte('match_date', now.toISOString())
-    .lte('match_date', nextWeek.toISOString())
     .order('match_date')
     .limit(1);
 
-  if (error || !upcomingMatches?.length) {
-    // If no upcoming matches found, get the latest round
-    const { data: latestMatch } = await supabase
-      .from('matches')
-      .select('round')
-      .order('round', { ascending: false })
-      .limit(1);
-
-    return latestMatch?.[0]?.round || 1;
+  if (!error && upcomingMatches?.length) {
+    return upcomingMatches[0].round;
   }
 
-  return upcomingMatches[0].round;
+  // No future matches - get the most recent completed round
+  const { data: latestMatch } = await supabase
+    .from('matches')
+    .select('round')
+    .eq('season', season)
+    .not('match_date', 'is', null)
+    .order('match_date', { ascending: false })
+    .limit(1);
+
+  return latestMatch?.[0]?.round || 0;
 };
 
 export const updateMatchResult = async (
-  matchId: string, 
-  winner: string, 
+  matchId: string,
+  winner: string,
   homeScore: number | null = null,
   awayScore: number | null = null
 ) => {
@@ -199,6 +251,7 @@ export const updateMatchResult = async (
       .select(`
         id,
         round,
+        season,
         venue,
         match_date,
         home_score,
@@ -225,15 +278,27 @@ export const updateMatchResult = async (
 };
 
 export const fetchRoundScores = async () => {
+  const season = await getCurrentSeason();
+
+  // Get match IDs for the current season
+  const { data: seasonMatches } = await supabase
+    .from('matches')
+    .select('id')
+    .eq('season', season);
+
+  if (!seasonMatches?.length) return [];
+  const matchIds = seasonMatches.map(m => m.id);
+
   const { data, error } = await supabase
     .from('tips')
     .select('*')
+    .in('match_id', matchIds)
     .order('round');
 
   if (error) {
     console.error('Error fetching round scores:', error);
     return [];
   }
-  
-  return data || []; 
+
+  return data || [];
 };
