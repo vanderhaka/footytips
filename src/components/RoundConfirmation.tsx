@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { getTips, fetchMatches } from '../data';
-import { FamilyMember } from '../types';
+import { FamilyMember, Match } from '../types';
 
 interface RoundConfirmationProps {
   round: number;
@@ -9,7 +9,7 @@ interface RoundConfirmationProps {
 }
 
 export function RoundConfirmation({ round, tippers }: RoundConfirmationProps) {
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [tips, setTips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 

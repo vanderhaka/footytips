@@ -1,27 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { MapPin, Calendar, AlertCircle, CheckCircle, XCircle, ChevronDown, ChevronRight, ArrowUpAZ, ArrowDownAZ } from 'lucide-react';
 import { fetchMatches, getTips, fetchTippers } from '../data';
-import { FamilyMember } from '../types';
+import { FamilyMember, Match } from '../types';
 import { getRoundLabel } from '../lib/roundLabels';
-
-interface Match {
-  id: string;
-  round: number;
-  home_team: {
-    name: string;
-    abbreviation: string;
-  };
-  away_team: {
-    name: string;
-    abbreviation: string;
-  };
-  venue: string;
-  match_date: string | null;
-  home_score: number | null;
-  away_score: number | null;
-  winner: string | null;
-  is_complete: boolean;
-}
+import { formatDate } from '../lib/formatDate';
 
 export function Season() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -81,20 +63,6 @@ export function Season() {
 
   let rounds = Array.from(new Set(matches.map(m => m.round))).sort((a, b) => a - b);
   if (sortDesc) rounds = rounds.reverse();
-
-  // getRoundLabel imported from shared util
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Date TBC';
-    return new Date(dateString).toLocaleDateString('en-AU', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    });
-  };
 
   const getTippersByTeam = (matchId: string, team: { name: string, abbreviation: string }, round: number) => {
     const matchTips = roundTips[round] || [];

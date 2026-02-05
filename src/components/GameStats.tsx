@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { fetchMatches, supabase } from '../data';
+import { fetchMatches } from '../data';
+import { supabase } from '../lib/supabase';
 
 export function GameStats() {
   const [stats, setStats] = useState({

@@ -3,7 +3,7 @@ import { History, Check } from 'lucide-react';
 import { TipEntry } from './TipEntry';
 import { RoundConfirmation } from './RoundConfirmation';
 import { fetchMatches, getTips } from '../data';
-import { FamilyMember } from '../types';
+import { FamilyMember, Match } from '../types';
 
 interface PastRoundsProps {
   tippers: FamilyMember[];
@@ -16,7 +16,7 @@ export function PastRounds({ tippers }: PastRoundsProps) {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loading, setLoading] = useState(true);
   const [roundTips, setRoundTips] = useState<any[]>([]);
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [allRoundsTips, setAllRoundsTips] = useState<Record<number, any[]>>({});
 
   useEffect(() => {

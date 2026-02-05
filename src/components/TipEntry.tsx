@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { AlertCircle } from 'lucide-react';
-import { FamilyMember } from '../types';
+import { FamilyMember, Match } from '../types';
 import { saveTip, fetchMatches, getCurrentRound, getTips } from '../data';
 
 interface TipEntryProps {
@@ -10,24 +9,14 @@ interface TipEntryProps {
 }
 
 export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEntryProps) {
-  // +++ DEBUG: Log props on initial render +++
-  useEffect(() => {
-    console.log('>>> TipEntry Mounted - Props Received <<<', {
-      familyMemberName: familyMember.name,
-      selectedRoundProp: selectedRound
-    });
-  }, [familyMember, selectedRound]); // Log only when these props change
-
   const [selectedTeams, setSelectedTeams] = useState<Record<string, string>>({});
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentRound, setCurrentRound] = useState<number>(0);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
-      // +++ DEBUG: Log data loading start +++
-      console.log('>>> TipEntry loadData Start <<<');
       try {
         const [matchesData, round] = await Promise.all([
           fetchMatches(),
@@ -37,31 +26,15 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
         const roundToUse = selectedRound !== undefined ? selectedRound : round;
         setCurrentRound(roundToUse);
 
-        // +++ DEBUG: Check matches for the target round +++
-        const roundMatches = matchesData.filter(m => m.round === roundToUse);
-        console.log(`>>> TipEntry loadData - Round ${roundToUse} Matches <<<`, {
-          count: roundMatches.length,
-          matchIds: roundMatches.map(m => m.id),
-          includes217: roundMatches.some(m => String(m.id) === '217')
-        });
-
         // Load existing tips
         const tips = await getTips(roundToUse);
         const existingTips = tips?.reduce((acc: Record<string, string>, tip: any) => {
           if (tip.tipper_id === familyMember.id) {
-            // Ensure match_id is stored as string key
             acc[String(tip.match_id)] = tip.team_tipped;
           }
           return acc;
         }, {});
         setSelectedTeams(existingTips || {});
-
-        // +++ DEBUG: Log loaded tips +++
-        console.log(`>>> TipEntry loadData - Round ${roundToUse} Tips Loaded for ${familyMember.name} <<<`, {
-          tipCount: Object.keys(existingTips || {}).length,
-          tipsMap: existingTips,
-          tipFor217: existingTips?.['217'] || 'Not Found' // Check specifically for 217
-        });
 
         setLoading(false);
       } catch (error) {
@@ -70,9 +43,8 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
       }
     };
     loadData();
-  }, [selectedRound, familyMember.id]); // Ensure dependency array is present
+  }, [selectedRound, familyMember.id]);
 
-  // Add back handleTeamSelect function
   const handleTeamSelect = (matchId: string, team: string) => {
     setSelectedTeams(prev => ({
       ...prev,

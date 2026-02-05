@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, Calendar, MapPin, AlertCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Navigation } from './components/Navigation';
 import { TipEntry } from './components/TipEntry';
 import { Leaderboard } from './components/Leaderboard';
@@ -9,10 +9,11 @@ import { PastRounds } from './components/PastRounds';
 import { Admin } from './components/Admin';
 import { Login } from './components/Login';
 import { TipsSummary } from './components/TipsSummary';
+import { FixtureView } from './components/FixtureView';
 import { getTips, fetchTippers, getCurrentRound, fetchMatches } from './data';
 import { getRoundLabel } from './lib/roundLabels';
 import { getSession } from './lib/auth';
-import { FamilyMember } from './types';
+import { FamilyMember, Match } from './types';
 
 function App() {
   const [currentView, setCurrentView] = useState<'tips' | 'season' | 'past' | 'admin' | 'enter_tips'>('tips');
@@ -22,7 +23,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [currentRound, setCurrentRound] = useState<number>(1);
   const [roundTips, setRoundTips] = useState<any[]>([]);
-  const [matches, setMatches] = useState<any[]>([]);
+  const [matches, setMatches] = useState<Match[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [previousRoundTips, setPreviousRoundTips] = useState<any[]>([]);
@@ -86,38 +87,10 @@ function App() {
 
   const hasMemberEnteredTips = (memberId: string) => {
     if (!Array.isArray(roundTips)) return false;
-    return roundTips.some(tip => 
-      tip.tipper_id === memberId && 
+    return roundTips.some(tip =>
+      tip.tipper_id === memberId &&
       tip.round === currentRound
     );
-  };
-
-  const formatDate = (dateString: string | null) => {
-    if (!dateString) return 'Date TBC';
-    return new Date(dateString).toLocaleDateString('en-AU', {
-      weekday: 'long',
-      day: 'numeric',
-      month: 'long',
-      hour: 'numeric',
-      minute: 'numeric',
-      hour12: true
-    });
-  };
-
-  const completedMatches = matches.filter(m => m.is_complete);
-
-  const getTeamForm = (teamName: string) => {
-    const teamMatches = completedMatches
-      .filter(m => m.home_team.name === teamName || m.away_team.name === teamName)
-      .sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()) // Sort recent first
-      .slice(0, 5); // Get last 5
-
-    return teamMatches.map(match => ({
-      id: match.id,
-      win: match.winner === 'draw' ? null : match.winner === teamName,
-      round: match.round,
-      location: match.home_team.name === teamName ? 'home' : 'away'
-    }));
   };
 
   if (loading || checkingAuth) {
@@ -129,6 +102,7 @@ function App() {
   }
 
   const currentRoundMatches = matches.filter(m => m.round === currentRound);
+  const completedMatches = matches.filter(m => m.is_complete);
   const previousRound = currentRound > 1 ? currentRound - 1 : null;
   const previousRoundMatches = previousRound ? matches.filter(m => m.round === previousRound) : [];
 
@@ -172,8 +146,8 @@ function App() {
                         <button
                           key={member.id}
                           className={`p-4 text-left rounded-lg transition-all ${
-                            hasEnteredTips 
-                              ? 'bg-green-50 hover:bg-green-100' 
+                            hasEnteredTips
+                              ? 'bg-green-50 hover:bg-green-100'
                               : 'bg-white hover:bg-gray-50'
                           } shadow-sm hover:shadow-md`}
                           onClick={() => setSelectedMemberId(member.id)}
@@ -220,7 +194,6 @@ function App() {
               {/* Desktop Tabs (md and up) */}
               <div className="hidden md:block border-b border-gray-200">
                 <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-                  {/* Leaderboard Button */}
                   <button
                     onClick={() => setActiveOverviewTab('leaderboard')}
                     className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
@@ -231,7 +204,6 @@ function App() {
                   >
                     Leaderboard
                   </button>
-                  {/* Current Tips Button */}
                   <button
                     onClick={() => setActiveOverviewTab('current')}
                     className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
@@ -242,7 +214,6 @@ function App() {
                   >
                     {getRoundLabel(currentRound)} Tips
                   </button>
-                  {/* Upcoming Fixture Button */}
                   <button
                     onClick={() => setActiveOverviewTab('fixture')}
                     className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${
@@ -253,7 +224,6 @@ function App() {
                   >
                     Upcoming Matches
                   </button>
-                  {/* Previous Round Button */}
                   {!loadingPrevious && previousRound && previousRoundMatches.length > 0 && (
                     <button
                       onClick={() => setActiveOverviewTab('previous')}
@@ -293,7 +263,7 @@ function App() {
             {activeOverviewTab === 'leaderboard' && (
               <Leaderboard tippers={tippers} matches={matches} />
             )}
-            
+
             {activeOverviewTab === 'current' && (
               <TipsSummary
                 title={`${getRoundLabel(currentRound)} Tips`}
@@ -313,145 +283,11 @@ function App() {
             )}
 
             {activeOverviewTab === 'fixture' && (
-              <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <div className="bg-blue-50 px-4 md:px-6 py-3 md:py-4 border-b">
-                  <h2 className="text-lg md:text-xl font-bold text-blue-900">{getRoundLabel(currentRound)} Fixture</h2>
-                </div>
-                {/* Form Guide Legend */}
-                <div className="px-4 md:px-6 pt-3 pb-2 text-xs text-gray-600 flex flex-wrap gap-x-3 md:gap-x-4 gap-y-1">
-                  <span className="font-semibold self-center">Key:</span>
-                  {/* Home Win */}
-                  <span className="flex items-center gap-1">
-                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-full border-green-500">
-                      <span className="text-xs font-bold leading-none text-green-600">W</span>
-                    </div>
-                     = Home Win
-                  </span>
-                  {/* Home Loss */}
-                  <span className="flex items-center gap-1">
-                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-full border-red-500">
-                      <span className="text-xs font-bold leading-none text-red-600">L</span>
-                    </div>
-                     = Home Loss
-                  </span>
-                  {/* Home Draw */}
-                  <span className="flex items-center gap-1">
-                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-full border-blue-500">
-                      <span className="text-xs font-bold leading-none text-blue-600">D</span>
-                    </div>
-                     = Home Draw
-                  </span>
-                  {/* Away Win */}
-                  <span className="flex items-center gap-1">
-                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-sm border-green-500">
-                      <span className="text-xs font-bold leading-none text-green-600">W</span>
-                    </div>
-                     = Away Win
-                  </span>
-                  {/* Away Loss */}
-                  <span className="flex items-center gap-1">
-                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-sm border-red-500">
-                      <span className="text-xs font-bold leading-none text-red-600">L</span>
-                    </div>
-                     = Away Loss
-                  </span>
-                  {/* Away Draw */}
-                  <span className="flex items-center gap-1">
-                    <div className="w-5 h-5 flex items-center justify-center border-2 rounded-sm border-blue-500">
-                      <span className="text-xs font-bold leading-none text-blue-600">D</span>
-                    </div>
-                     = Away Draw
-                  </span>
-                </div>
-
-                {currentRoundMatches.length === 0 ? (
-                  <div className="px-4 md:px-6 py-8 text-center text-gray-500">No matches found for this round.</div>
-                ) : (
-                  <div className="divide-y">
-                    {currentRoundMatches.map(match => {
-                      const homeForm = getTeamForm(match.home_team.name);
-                      const awayForm = getTeamForm(match.away_team.name);
-
-                      return (
-                        <div key={match.id} className="px-4 md:px-6 py-3 md:py-4">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex-1 text-left">
-                              <div className="text-base md:text-lg font-semibold text-gray-900">
-                                {match.home_team.name}
-                              </div>
-                              <div className="flex gap-1.5 mt-1">
-                                {homeForm.length > 0 ? (
-                                  homeForm.map(form => (
-                                    <div key={`${match.id}-h-${form.id}`} className="flex flex-col items-center">
-                                      <span className="text-xs text-gray-400 leading-none mb-0.5">R{form.round}</span>
-                                      <div 
-                                        className={`w-5 h-5 flex items-center justify-center border-2 ${form.location === 'home' ? 'rounded-full' : 'rounded-sm'} ${form.win === null ? 'border-blue-500' : form.win ? 'border-green-500' : 'border-red-500'}`}
-                                      >
-                                        <span 
-                                          className={`text-xs font-bold leading-none ${form.win === null ? 'text-blue-600' : form.win ? 'text-green-600' : 'text-red-600'}`}
-                                        >
-                                          {form.win === null ? 'D' : form.win ? 'W' : 'L'}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))
-                                ) : (
-                                  <span className="text-xs text-gray-400">No recent form</span>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="text-sm text-gray-500 mx-2 pt-1">vs</div>
-
-                            <div className="flex-1 text-right">
-                              <div className="text-base md:text-lg font-semibold text-gray-900">
-                                {match.away_team.name}
-                              </div>
-                              <div className="flex gap-1.5 mt-1 justify-end">
-                                {awayForm.length > 0 ? (
-                                  awayForm.map(form => (
-                                    <div key={`${match.id}-a-${form.id}`} className="flex flex-col items-center">
-                                      <span className="text-xs text-gray-400 leading-none mb-0.5">R{form.round}</span>
-                                      <div 
-                                        className={`w-5 h-5 flex items-center justify-center border-2 ${form.location === 'home' ? 'rounded-full' : 'rounded-sm'} ${form.win === null ? 'border-blue-500' : form.win ? 'border-green-500' : 'border-red-500'}`}
-                                      >
-                                        <span 
-                                          className={`text-xs font-bold leading-none ${form.win === null ? 'text-blue-600' : form.win ? 'text-green-600' : 'text-red-600'}`}
-                                        >
-                                          {form.win === null ? 'D' : form.win ? 'W' : 'L'}
-                                        </span>
-                                      </div>
-                                    </div>
-                                  ))
-                                ) : (
-                                  <span className="text-xs text-gray-400">No recent form</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex flex-col items-center text-gray-600 text-xs md:text-sm mt-2">
-                            {match.match_date ? (
-                              <div className="flex items-center gap-2">
-                                <Calendar size={16} />
-                                <span>{formatDate(match.match_date)}</span>
-                              </div>
-                            ) : (
-                              <div className="flex items-center gap-2 text-amber-600">
-                                <AlertCircle size={16} />
-                                <span>Date TBC</span>
-                              </div>
-                            )}
-                            <div className="flex items-center gap-2 mt-1">
-                              <MapPin size={16} />
-                              <span>{match.venue}</span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              <FixtureView
+                currentRound={currentRound}
+                currentRoundMatches={currentRoundMatches}
+                completedMatches={completedMatches}
+              />
             )}
             </>
           </>

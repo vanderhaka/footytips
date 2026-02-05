@@ -1,25 +1,5 @@
 import { supabase } from './lib/supabase';
-
-export { supabase };
-
-type Team = {
-  name: string;
-  abbreviation: string;
-};
-
-type Match = {
-  id: string;
-  round: number;
-  venue: string;
-  match_date: string;
-  home_score: number | null;
-  away_score: number | null;
-  winner: string | null;
-  is_complete: boolean;
-  created_at: string;
-  home_team: Team;
-  away_team: Team;
-};
+import { Match, Team } from './types';
 
 export const getTips = async (round: number) => {
   // Get match IDs for this round
@@ -242,13 +222,6 @@ export const updateMatchResult = async (
     console.error('Error in updateMatchResult:', error);
     throw error;
   }
-};
-
-// Points are now automatically calculated by the tipper_points view
-export const calculatePoints = async () => {
-  // This is now a no-op since points are calculated automatically
-  // Keep the function to maintain API compatibility
-  return {};
 };
 
 export const fetchRoundScores = async () => {
