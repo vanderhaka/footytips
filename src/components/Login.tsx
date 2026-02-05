@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Lock } from 'lucide-react';
 import { signIn } from '../lib/auth';
 
@@ -19,7 +19,7 @@ export function Login({ onSuccess }: LoginProps) {
     try {
       await signIn(pin);
       onSuccess();
-    } catch (err) {
+    } catch {
       setError('Invalid PIN');
       setPin('');
     } finally {

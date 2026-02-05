@@ -6,23 +6,21 @@ export interface FamilyMember {
   created_at?: string;
 }
 
-export interface Game {
+export interface Team {
+  name: string;
+  abbreviation: string;
+}
+
+export interface Match {
   id: string;
-  homeTeam: string;
-  awayTeam: string;
   round: number;
-  date: string;
-}
-
-export interface Tip {
-  gameId: string;
-  familyMemberId: string;
-  selectedTeam: string;
-  round: number;
-}
-
-export interface RoundTips {
-  familyMemberId: string;
-  tips: Tip[];
-  isComplete: boolean;
+  venue: string;
+  match_date: string | null;
+  home_score: number | null;
+  away_score: number | null;
+  winner: string | null;
+  is_complete: boolean;
+  created_at: string;
+  home_team: Team;
+  away_team: Team;
 }

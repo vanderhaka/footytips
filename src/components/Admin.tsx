@@ -1,34 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Trophy, Check, Loader2, AlertCircle } from 'lucide-react';
-import { fetchMatches, updateMatchResult, calculatePoints } from '../data';
+import { fetchMatches, updateMatchResult } from '../data';
+import { Match } from '../types';
 import { GameStats } from './GameStats';
-
-interface Match {
-  id: string;
-  round: number;
-  venue: string;
-  match_date: string;
-  home_score: number | null;
-  away_score: number | null;
-  winner: string | null;
-  is_complete: boolean;
-  created_at: string;
-  home_team: {
-    name: string;
-    abbreviation: string;
-  };
-  away_team: {
-    name: string;
-    abbreviation: string;
-  };
-}
 
 export function Admin() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingMatch, setSavingMatch] = useState<string | null>(null);
-  const [calculatingPoints, setCalculatingPoints] = useState(false);
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
 
   useEffect(() => {
@@ -64,10 +44,6 @@ export function Admin() {
         } : m
       ));
       
-      // Calculate points for all rounds since a result can affect overall standings
-      setCalculatingPoints(true);
-      await calculatePoints();
-      
       // Refresh matches to get latest state
       const updatedMatches = await fetchMatches();
       setMatches(updatedMatches);
@@ -77,7 +53,6 @@ export function Admin() {
       alert('Failed to update match result. Please try again.');
     } finally {
       setSavingMatch(null);
-      setCalculatingPoints(false);
     }
   };
 
@@ -99,12 +74,6 @@ export function Admin() {
             <Trophy className="text-blue-600" size={24} />
             <h2 className="text-2xl font-bold text-gray-800">Enter Match Results</h2>
           </div>
-          {calculatingPoints && (
-            <div className="flex items-center gap-2 text-blue-600">
-              <Loader2 className="animate-spin" size={16} />
-              <span>Updating leaderboard...</span>
-            </div>
-          )}
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-4 mb-6">

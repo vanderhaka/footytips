@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Users, Calendar, History, Trophy, LogOut, Edit3, Menu, X } from 'lucide-react';
 import { signOut } from '../lib/auth';
 

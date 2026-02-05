@@ -1,21 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Trophy, X } from 'lucide-react';
-import { FamilyMember } from '../types';
-import { fetchRoundScores } from '../data'; // Import the new function
+import { FamilyMember, Match } from '../types';
+import { fetchRoundScores } from '../data';
 
 interface LeaderboardProps {
   tippers: FamilyMember[];
-  matches: any[];
-}
-
-interface RoundScore {
-  tipper_id: string;
-  round: number;
-  is_correct: boolean | null;
-  id: number;
-  match_id: number;
-  team_tipped: string;
-  created_at: string;
+  matches: Match[];
 }
 
 interface ProcessedScores {
