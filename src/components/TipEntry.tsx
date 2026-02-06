@@ -3,6 +3,7 @@ import { Clock } from 'lucide-react';
 import { FamilyMember, Match } from '../types';
 import { saveTip, fetchMatches, getCurrentRound, getTips } from '../data';
 import { ConfirmDialog } from './ConfirmDialog';
+import { TeamIcon } from './TeamIcon';
 
 interface TipEntryProps {
   familyMember: FamilyMember;
@@ -230,27 +231,32 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound, showToa
               </div>
               <div className="flex gap-4">
                 {/* Add onClick handler and cursor-pointer to home team div */}
-                <div 
-                  className={`flex-1 p-3 rounded-lg border cursor-pointer ${ 
+                <div
+                  className={`flex-1 p-3 rounded-lg border cursor-pointer ${
                   isHomeSelected
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
+                    ? 'bg-blue-100 text-blue-800 border-blue-300'
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                   }`}
                   onClick={() => handleTeamSelect(matchIdStr, homeTeam.abbreviation)}
                 >
-                  <div className="text-center">{homeTeam.name}</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <TeamIcon abbreviation={homeTeam.abbreviation} />
+                    <span className="font-medium">{homeTeam.name}</span>
+                  </div>
                 </div>
                 <span className="flex items-center text-gray-500">vs</span>
-                {/* Add onClick handler and cursor-pointer to away team div */}
-                <div 
-                  className={`flex-1 p-3 rounded-lg border cursor-pointer ${ 
+                <div
+                  className={`flex-1 p-3 rounded-lg border cursor-pointer ${
                   isAwaySelected
-                    ? 'bg-blue-100 text-blue-800'
-                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200' 
+                    ? 'bg-blue-100 text-blue-800 border-blue-300'
+                    : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
                   }`}
                   onClick={() => handleTeamSelect(matchIdStr, awayTeam.abbreviation)}
                 >
-                  <div className="text-center">{awayTeam.name}</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <TeamIcon abbreviation={awayTeam.abbreviation} />
+                    <span className="font-medium">{awayTeam.name}</span>
+                  </div>
                 </div>
               </div>
             </div>

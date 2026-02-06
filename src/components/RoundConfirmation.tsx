@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CheckCircle } from 'lucide-react';
 import { getTips, fetchMatches } from '../data';
 import { FamilyMember, Match } from '../types';
+import { TeamIcon } from './TeamIcon';
 
 interface RoundConfirmationProps {
   round: number;
@@ -78,9 +79,15 @@ export function RoundConfirmation({ round, tippers, onEditTips }: RoundConfirmat
               {roundMatches.map(match => (
                 <tr key={match.id} className="border-t">
                   <td className="p-3">
-                    <div className="font-medium">{match.home_team.name}</div>
-                    <div className="text-sm text-gray-500">vs</div>
-                    <div className="font-medium">{match.away_team.name}</div>
+                    <div className="font-medium flex items-center gap-2">
+                      <TeamIcon abbreviation={match.home_team.abbreviation} size="sm" />
+                      {match.home_team.name}
+                    </div>
+                    <div className="text-sm text-gray-500 ml-8">vs</div>
+                    <div className="font-medium flex items-center gap-2">
+                      <TeamIcon abbreviation={match.away_team.abbreviation} size="sm" />
+                      {match.away_team.name}
+                    </div>
                   </td>
                   {tippers.map(tipper => (
                     <td key={tipper.id} className="p-3">

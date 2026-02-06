@@ -1,5 +1,6 @@
 import { Check, X } from 'lucide-react';
 import { FamilyMember, Match } from '../types';
+import { TeamIcon } from './TeamIcon';
 
 interface TipsSummaryProps {
   title: string;
@@ -47,14 +48,14 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
     <div className="bg-white rounded-lg shadow p-4 mb-4">
       <h3 className="text-lg font-semibold mb-3">{title}</h3>
       <div className="overflow-x-auto">
-        <table className="w-full text-xs sm:text-sm">
+        <table className="w-full text-xs sm:text-sm table-fixed">
           <thead>
             <tr className="border-b">
-              <th className="py-2 sm:py-1 px-2 text-left font-medium">Game</th>
+              <th className="py-2 sm:py-1 px-2 text-left font-medium w-auto">Game</th>
               {tippers.map(tipper => {
                 const isWinner = allMatchesComplete && roundWinners.some(winner => winner.id === tipper.id);
                 return (
-                  <th key={tipper.id} className="py-2 sm:py-1 px-2 text-left font-medium">
+                  <th key={tipper.id} className="py-2 sm:py-1 px-2 text-left font-medium" style={{ width: `${70 / tippers.length}%` }}>
                     {tipper.name.split(' ')[0]} {/* Show only first name */}
                     {isWinner && ' 🏆'} {/* Add trophy if winner */}
                   </th>
@@ -72,9 +73,11 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
                 <tr key={match.id} className="border-b last:border-0">
                   <td className="py-2 sm:py-1 px-2">
                     <div className="flex items-center gap-1 text-xs">
+                      <TeamIcon abbreviation={homeTeam.abbreviation} size="sm" />
                       <span>{homeTeam.abbreviation}</span>
                       <span className="text-gray-400">v</span>
                       <span>{awayTeam.abbreviation}</span>
+                      <TeamIcon abbreviation={awayTeam.abbreviation} size="sm" />
                       {match.is_complete && match.winner === 'draw' && (
                         <span className="ml-1 text-blue-600 font-semibold">(Draw)</span>
                       )}

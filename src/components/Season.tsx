@@ -4,6 +4,7 @@ import { fetchMatches, getTips, fetchTippers } from '../data';
 import { FamilyMember, Match } from '../types';
 import { getRoundLabel } from '../lib/roundLabels';
 import { formatDate } from '../lib/formatDate';
+import { TeamIcon } from './TeamIcon';
 
 export function Season() {
   const [matches, setMatches] = useState<Match[]>([]);
@@ -147,12 +148,14 @@ export function Season() {
               {roundMatches.map(match => (
                 <div key={match.id} className="px-6 py-4">
                   <div className="flex justify-between items-center mb-2">
-                    <div className="text-lg font-semibold text-gray-900">
+                    <div className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <TeamIcon abbreviation={match.home_team.abbreviation} />
                       {match.home_team.name}
                     </div>
                     <div className="text-sm text-gray-500 mx-2">vs</div>
-                    <div className="text-lg font-semibold text-gray-900">
+                    <div className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                       {match.away_team.name}
+                      <TeamIcon abbreviation={match.away_team.abbreviation} />
                     </div>
                   </div>
                   <div className="flex flex-col items-center text-gray-600 text-sm">

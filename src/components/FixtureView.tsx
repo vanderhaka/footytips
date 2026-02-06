@@ -2,6 +2,7 @@ import { Calendar, MapPin, AlertCircle } from 'lucide-react';
 import { getRoundLabel } from '../lib/roundLabels';
 import { formatDate } from '../lib/formatDate';
 import { Match } from '../types';
+import { TeamIcon } from './TeamIcon';
 
 interface FixtureViewProps {
   currentRound: number;
@@ -92,7 +93,8 @@ export function FixtureView({ currentRound, currentRoundMatches, completedMatche
               <div key={match.id} className="px-4 md:px-6 py-3 md:py-4">
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1 text-left">
-                    <div className="text-base md:text-lg font-semibold text-gray-900">
+                    <div className="text-base md:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                      <TeamIcon abbreviation={match.home_team.abbreviation} size="lg" />
                       {match.home_team.name}
                     </div>
                     <div className="flex gap-1.5 mt-1">
@@ -120,7 +122,8 @@ export function FixtureView({ currentRound, currentRoundMatches, completedMatche
                   <div className="text-sm text-gray-500 mx-2 pt-1">vs</div>
 
                   <div className="flex-1 text-right">
-                    <div className="text-base md:text-lg font-semibold text-gray-900">
+                    <div className="text-base md:text-lg font-semibold text-gray-900 flex items-center justify-end gap-2">
+                      <TeamIcon abbreviation={match.away_team.abbreviation} size="lg" />
                       {match.away_team.name}
                     </div>
                     <div className="flex gap-1.5 mt-1 justify-end">
