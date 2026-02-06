@@ -72,12 +72,12 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
               return (
                 <tr key={match.id} className="border-b last:border-0">
                   <td className="py-2 sm:py-1 px-2">
-                    <div className="flex items-center gap-1 text-xs">
-                      <TeamIcon abbreviation={homeTeam.abbreviation} size="sm" />
-                      <span>{homeTeam.abbreviation}</span>
-                      <span className="text-gray-400">v</span>
-                      <span>{awayTeam.abbreviation}</span>
-                      <TeamIcon abbreviation={awayTeam.abbreviation} size="sm" />
+                    <div className="flex items-center text-xs" style={{ minWidth: 170 }}>
+                      <span className="mr-3"><TeamIcon abbreviation={homeTeam.abbreviation} size="sm" /></span>
+                      <span className="w-10 font-semibold">{homeTeam.abbreviation}</span>
+                      <span className="text-gray-400 mx-2">v</span>
+                      <span className="w-10 font-semibold">{awayTeam.abbreviation}</span>
+                      <span className="ml-1.5"><TeamIcon abbreviation={awayTeam.abbreviation} size="sm" /></span>
                       {match.is_complete && match.winner === 'draw' && (
                         <span className="ml-1 text-blue-600 font-semibold">(Draw)</span>
                       )}
