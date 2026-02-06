@@ -46,11 +46,22 @@ export function Season() {
     loadData();
   }, []);
 
-  // Initialize open rounds once matches are loaded (default: all open)
+  // Initialize with only the next upcoming round open
   useEffect(() => {
     if (!matches.length || openRounds.size > 0) return;
-    const uniqueRounds = Array.from(new Set(matches.map(m => m.round)));
-    setOpenRounds(new Set(uniqueRounds));
+    const now = new Date();
+    // Find the first match in the future to determine the next round
+    const upcoming = matches
+      .filter(m => m.match_date && new Date(m.match_date) >= now)
+      .sort((a, b) => new Date(a.match_date!).getTime() - new Date(b.match_date!).getTime());
+    if (upcoming.length > 0) {
+      setOpenRounds(new Set([upcoming[0].round]));
+    } else {
+      // All matches in the past — open the latest round
+      const allRounds = Array.from(new Set(matches.map(m => m.round)));
+      const maxRound = Math.max(...allRounds);
+      setOpenRounds(new Set([maxRound]));
+    }
   }, [matches]);
 
   if (loading) {
