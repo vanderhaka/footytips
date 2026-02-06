@@ -47,14 +47,14 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
     <div className="bg-white rounded-lg shadow p-4 mb-4">
       <h3 className="text-lg font-semibold mb-3">{title}</h3>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-xs sm:text-sm">
           <thead>
             <tr className="border-b">
-              <th className="py-1 px-2 text-left font-medium">Game</th>
+              <th className="py-2 sm:py-1 px-2 text-left font-medium">Game</th>
               {tippers.map(tipper => {
                 const isWinner = allMatchesComplete && roundWinners.some(winner => winner.id === tipper.id);
                 return (
-                  <th key={tipper.id} className="py-1 px-2 text-left font-medium">
+                  <th key={tipper.id} className="py-2 sm:py-1 px-2 text-left font-medium">
                     {tipper.name.split(' ')[0]} {/* Show only first name */}
                     {isWinner && ' 🏆'} {/* Add trophy if winner */}
                   </th>
@@ -70,7 +70,7 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
 
               return (
                 <tr key={match.id} className="border-b last:border-0">
-                  <td className="py-1 px-2">
+                  <td className="py-2 sm:py-1 px-2">
                     <div className="flex items-center gap-1 text-xs">
                       <span>{homeTeam.abbreviation}</span>
                       <span className="text-gray-400">v</span>
@@ -111,9 +111,9 @@ export function TipsSummary({ title, tippers, matches, roundTips }: TipsSummaryP
 
                     // --- Render Tip Cell ---
                     return (
-                      <td key={tipper.id} className="py-1 px-2">
+                      <td key={tipper.id} className="py-2 sm:py-1 px-2">
                         {tipValue ? (
-                          <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs
+                          <div className={`inline-flex items-center gap-1 px-2 py-1.5 sm:py-0.5 rounded text-xs
                             ${match.is_complete 
                               ? isCorrect // Use the robust check (includes draws)
                                 ? 'bg-green-100 text-green-800' // Correct tip (including draws)

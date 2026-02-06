@@ -1,19 +1,25 @@
 import { useState, useEffect } from 'react';
+import { Clock } from 'lucide-react';
 import { FamilyMember, Match } from '../types';
 import { saveTip, fetchMatches, getCurrentRound, getTips } from '../data';
+import { ConfirmDialog } from './ConfirmDialog';
 
 interface TipEntryProps {
   familyMember: FamilyMember;
   onTipsSubmitted: () => void;
   selectedRound?: number;
+  showToast: (toast: { message: string; type: 'success' | 'error' }) => void;
 }
 
-export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEntryProps) {
+export function TipEntry({ familyMember, onTipsSubmitted, selectedRound, showToast }: TipEntryProps) {
   const [selectedTeams, setSelectedTeams] = useState<Record<string, string>>({});
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentRound, setCurrentRound] = useState<number>(0);
   const [saving, setSaving] = useState(false);
+  const [showPartialWarning, setShowPartialWarning] = useState(false);
+  const [countdown, setCountdown] = useState('');
+  const [countdownColor, setCountdownColor] = useState('text-gray-500');
 
   useEffect(() => {
     const loadData = async () => {
@@ -45,6 +51,50 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
     loadData();
   }, [selectedRound, familyMember.id]);
 
+  useEffect(() => {
+    if (!matches.length || !currentRound) return;
+
+    const roundMatches = matches.filter(m => m.round === currentRound);
+    const datesWithValues = roundMatches
+      .map(m => m.match_date)
+      .filter((d): d is string => d !== null)
+      .map(d => new Date(d).getTime());
+
+    if (!datesWithValues.length) return;
+
+    const deadline = Math.min(...datesWithValues);
+
+    const updateCountdown = () => {
+      const now = Date.now();
+      const diff = deadline - now;
+
+      if (diff <= 0) {
+        setCountdown('Tips closed');
+        setCountdownColor('text-red-500');
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+      if (days > 0) {
+        setCountdown(`${days}d ${hours}h remaining`);
+        setCountdownColor('text-gray-500');
+      } else if (hours > 0) {
+        setCountdown(`${hours}h ${minutes}m remaining`);
+        setCountdownColor(hours < 1 ? 'text-orange-500' : 'text-gray-500');
+      } else {
+        setCountdown(`${minutes}m remaining`);
+        setCountdownColor('text-orange-500');
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 60000);
+    return () => clearInterval(interval);
+  }, [matches, currentRound]);
+
   const handleTeamSelect = (matchId: string, team: string) => {
     setSelectedTeams(prev => ({
       ...prev,
@@ -52,33 +102,51 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
     }));
   };
 
-  const handleSubmit = async () => {
+  const doSave = async () => {
     try {
       setSaving(true);
       const roundMatches = matches.filter(match => match.round === currentRound);
-      
-      // Save each tip to the database, but only for matches where a team has been selected
+
       await Promise.all(
         roundMatches
-          .filter(match => selectedTeams[String(match.id)]) // Use String(match.id) for filter
-          .map(match => { // Keep using String(match.id) for selectedTeams key
+          .filter(match => selectedTeams[String(match.id)])
+          .map(match => {
             const matchIdStr = String(match.id);
-            return saveTip({              // Pass original numeric match.id to saveTip
+            return saveTip({
               tipper_id: familyMember.id,
               round: currentRound,
-              match_id: match.id, // Pass numeric match.id here
-              team_tipped: selectedTeams[matchIdStr] // Still use string key for lookup
+              match_id: match.id,
+              team_tipped: selectedTeams[matchIdStr]
             });
           })
       );
-      
+
+      showToast({ message: 'Tips saved!', type: 'success' });
       onTipsSubmitted();
     } catch (error) {
       console.error('Error saving tips:', error);
-      alert('Failed to save tips. Please try again.');
+      showToast({ message: 'Failed to save tips. Please try again.', type: 'error' });
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleSubmit = async () => {
+    const roundMatches = matches.filter(match => match.round === currentRound);
+    const tippedCount = roundMatches.filter(m => selectedTeams[String(m.id)]).length;
+    const totalCount = roundMatches.length;
+
+    if (tippedCount < totalCount && tippedCount > 0) {
+      setShowPartialWarning(true);
+      return;
+    }
+
+    if (tippedCount === 0) {
+      showToast({ message: 'Please select at least one tip', type: 'error' });
+      return;
+    }
+
+    await doSave();
   };
 
   if (loading) {
@@ -112,7 +180,35 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
       <h2 className="text-2xl font-bold mb-6 text-blue-800">
         Tips for {familyMember.name} - Round {currentRound}
       </h2>
-      
+
+      {countdown && (
+        <div className={`flex items-center gap-1 text-sm mb-2 ${countdownColor}`}>
+          <Clock size={14} />
+          <span>{countdown}</span>
+        </div>
+      )}
+
+      {(() => {
+        const tippedCount = roundMatchesForRender.filter(m => selectedTeams[String(m.id)]).length;
+        const totalCount = roundMatchesForRender.length;
+        const progress = totalCount > 0 ? (tippedCount / totalCount) * 100 : 0;
+        return (
+          <div className="mb-4">
+            <div className="flex justify-between text-sm mb-1">
+              <span className={tippedCount === totalCount ? 'text-green-600 font-medium' : 'text-gray-600'}>
+                {tippedCount === totalCount ? 'All tipped!' : `${tippedCount} of ${totalCount} tipped`}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all ${tippedCount === totalCount ? 'bg-green-500' : 'bg-blue-500'}`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="space-y-4">
         {roundMatchesForRender.map(match => {
           const matchIdStr = String(match.id);
@@ -167,8 +263,25 @@ export function TipEntry({ familyMember, onTipsSubmitted, selectedRound }: TipEn
         disabled={saving} 
         className="mt-6 w-full py-3 px-4 bg-green-500 text-white font-semibold rounded-lg shadow hover:bg-green-600 transition-colors disabled:opacity-50"
       >
-        {saving ? 'Saving...' : 'Save Tips'}
+        {saving ? 'Saving...' : (() => {
+          const tippedCount = roundMatchesForRender.filter(m => selectedTeams[String(m.id)]).length;
+          const totalCount = roundMatchesForRender.length;
+          return tippedCount < totalCount ? `Save ${tippedCount} of ${totalCount} Tips` : 'Save Tips';
+        })()}
       </button>
+
+      <ConfirmDialog
+        isOpen={showPartialWarning}
+        title="Incomplete Tips"
+        message={`You've tipped ${roundMatchesForRender.filter(m => selectedTeams[String(m.id)]).length} of ${roundMatchesForRender.length} matches. Save anyway?`}
+        confirmLabel="Save Anyway"
+        cancelLabel="Keep Editing"
+        onConfirm={() => {
+          setShowPartialWarning(false);
+          doSave();
+        }}
+        onCancel={() => setShowPartialWarning(false)}
+      />
     </div>
   );
 }

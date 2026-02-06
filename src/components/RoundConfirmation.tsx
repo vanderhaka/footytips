@@ -6,9 +6,10 @@ import { FamilyMember, Match } from '../types';
 interface RoundConfirmationProps {
   round: number;
   tippers: FamilyMember[];
+  onEditTips?: (memberId: string) => void;
 }
 
-export function RoundConfirmation({ round, tippers }: RoundConfirmationProps) {
+export function RoundConfirmation({ round, tippers, onEditTips }: RoundConfirmationProps) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [tips, setTips] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +58,7 @@ export function RoundConfirmation({ round, tippers }: RoundConfirmationProps) {
       </div>
 
       {allTipsEntered ? (
+        <>
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -65,6 +67,9 @@ export function RoundConfirmation({ round, tippers }: RoundConfirmationProps) {
                 {tippers.map(tipper => (
                   <th key={tipper.id} className="p-3 text-left font-semibold">
                     {tipper.name}
+                    {onEditTips && (
+                      <button onClick={() => onEditTips(tipper.id)} className="text-xs text-blue-500 hover:text-blue-700 ml-1 font-normal">(edit)</button>
+                    )}
                   </th>
                 ))}
               </tr>
@@ -87,6 +92,17 @@ export function RoundConfirmation({ round, tippers }: RoundConfirmationProps) {
             </tbody>
           </table>
         </div>
+        {onEditTips && (
+          <div className="mt-4 space-y-2 md:hidden">
+            {tippers.map(tipper => (
+              <button key={tipper.id} onClick={() => onEditTips(tipper.id)}
+                className="w-full py-2 px-4 bg-blue-50 text-blue-600 rounded-lg text-sm hover:bg-blue-100">
+                Edit {tipper.name}'s Tips
+              </button>
+            ))}
+          </div>
+        )}
+        </>
       ) : (
         <div className="text-center p-8 bg-yellow-50 rounded-lg">
           <p className="text-yellow-700">

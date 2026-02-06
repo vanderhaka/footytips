@@ -8,6 +8,7 @@ import { Season } from './components/Season';
 import { PastRounds } from './components/PastRounds';
 import { Admin } from './components/Admin';
 import { Login } from './components/Login';
+import { Toast } from './components/Toast';
 import { TipsSummary } from './components/TipsSummary';
 import { FixtureView } from './components/FixtureView';
 import { getTips, fetchTippers, getCurrentRound, fetchMatches } from './data';
@@ -29,6 +30,9 @@ function App() {
   const [previousRoundTips, setPreviousRoundTips] = useState<any[]>([]);
   const [loadingPrevious, setLoadingPrevious] = useState(true);
   const [activeOverviewTab, setActiveOverviewTab] = useState<'leaderboard' | 'current' | 'previous' | 'fixture'>('leaderboard');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (t: { message: string; type: 'success' | 'error' }) => setToast(t);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -129,7 +133,7 @@ function App() {
           )
         ) : currentView === 'admin' ? (
           isAuthenticated ? (
-            <Admin />
+            <Admin showToast={showToast} />
           ) : (
             <Login onSuccess={() => setIsAuthenticated(true)} />
           )
@@ -139,6 +143,24 @@ function App() {
               {!selectedMemberId && !showConfirmation && (
                 <div>
                   <h2 className="text-xl font-semibold mb-4">Select Family Member</h2>
+                  {(() => {
+                    const now = new Date();
+                    const allComplete = currentRoundMatches.length > 0 && currentRoundMatches.every(m => m.is_complete);
+                    const anyStarted = currentRoundMatches.some(m => m.match_date && new Date(m.match_date) < now);
+                    const status = allComplete ? 'completed' : anyStarted ? 'in_progress' : 'open';
+                    const badge = {
+                      open: { text: 'Open for Tips', color: 'bg-green-100 text-green-800' },
+                      in_progress: { text: 'In Progress', color: 'bg-yellow-100 text-yellow-800' },
+                      completed: { text: 'Completed', color: 'bg-gray-100 text-gray-600' },
+                    }[status];
+                    return (
+                      <div className="mb-4">
+                        <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${badge.color}`}>
+                          {badge.text}
+                        </span>
+                      </div>
+                    );
+                  })()}
                   <div className="grid gap-3">
                     {tippers.map(member => {
                       const hasEnteredTips = hasMemberEnteredTips(member.id);
@@ -153,7 +175,12 @@ function App() {
                           onClick={() => setSelectedMemberId(member.id)}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-medium">{member.name}</span>
+                            <div>
+                              <span className="font-medium">{member.name}</span>
+                              <div className="text-xs text-gray-500">
+                                {roundTips.filter(t => t.tipper_id === member.id && t.round === currentRound).length}/{currentRoundMatches.length} tipped
+                              </div>
+                            </div>
                             {hasEnteredTips && (
                               <Check className="text-green-500" size={20} />
                             )}
@@ -169,12 +196,20 @@ function App() {
                 <TipEntry
                   familyMember={tippers.find(m => m.id === selectedMemberId)!}
                   onTipsSubmitted={handleTipsSubmitted}
+                  showToast={showToast}
                 />
               )}
 
               {showConfirmation && (
                 <>
-                  <RoundConfirmation round={currentRound} tippers={tippers} />
+                  <RoundConfirmation
+                    round={currentRound}
+                    tippers={tippers}
+                    onEditTips={(memberId) => {
+                      setSelectedMemberId(memberId);
+                      setShowConfirmation(false);
+                    }}
+                  />
                   <button
                     className="mt-6 mx-auto block px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
                     onClick={() => setShowConfirmation(false)}
@@ -293,6 +328,13 @@ function App() {
           </>
         )}
       </div>
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }

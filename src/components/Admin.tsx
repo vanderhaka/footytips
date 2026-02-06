@@ -3,13 +3,19 @@ import { Trophy, Check, Loader2, AlertCircle } from 'lucide-react';
 import { fetchMatches, updateMatchResult } from '../data';
 import { Match } from '../types';
 import { GameStats } from './GameStats';
+import { ConfirmDialog } from './ConfirmDialog';
 
-export function Admin() {
+interface AdminProps {
+  showToast: (toast: { message: string; type: 'success' | 'error' }) => void;
+}
+
+export function Admin({ showToast }: AdminProps) {
   const [matches, setMatches] = useState<Match[]>([]);
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingMatch, setSavingMatch] = useState<string | null>(null);
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
+  const [pendingWinner, setPendingWinner] = useState<{ matchId: string; winner: string; matchLabel: string } | null>(null);
 
   useEffect(() => {
     const loadMatches = async () => {
@@ -30,30 +36,43 @@ export function Admin() {
   const rounds = Array.from(new Set(matches.map(m => m.round))).sort((a, b) => a - b);
   const roundMatches = matches.filter(m => m.round === selectedRound);
 
-  const handleWinnerSelect = async (matchId: string, winner: string) => {
+  const executeWinnerSelect = async (matchId: string, winner: string) => {
     try {
       setSavingMatch(matchId);
       const updatedMatch = await updateMatchResult(matchId, winner);
-      
-      // Update local matches state
-      setMatches(prev => prev.map(m => 
-        m.id === matchId ? { 
-          ...m, 
+
+      setMatches(prev => prev.map(m =>
+        m.id === matchId ? {
+          ...m,
           winner: updatedMatch.winner,
           is_complete: updatedMatch.is_complete
         } : m
       ));
-      
-      // Refresh matches to get latest state
+
       const updatedMatches = await fetchMatches();
       setMatches(updatedMatches);
       setEditingMatch(null);
+      showToast({ message: 'Match result saved', type: 'success' });
     } catch (error) {
       console.error('Error updating match result:', error);
-      alert('Failed to update match result. Please try again.');
+      showToast({ message: 'Failed to update match result. Please try again.', type: 'error' });
     } finally {
       setSavingMatch(null);
     }
+  };
+
+  const handleWinnerSelect = (matchId: string, winner: string) => {
+    const match = matches.find(m => m.id === matchId);
+    if (!match) return;
+
+    const winnerName = winner === 'draw' ? 'Draw' :
+      winner === match.home_team.abbreviation ? match.home_team.name : match.away_team.name;
+
+    setPendingWinner({
+      matchId,
+      winner,
+      matchLabel: `${match.home_team.name} vs ${match.away_team.name} → ${winnerName}`
+    });
   };
 
   if (loading) {
@@ -209,6 +228,22 @@ export function Admin() {
           })}
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={pendingWinner !== null}
+        title="Confirm Match Result"
+        message={pendingWinner ? `Set result: ${pendingWinner.matchLabel}?` : ''}
+        confirmLabel="Set Result"
+        cancelLabel="Cancel"
+        confirmVariant="danger"
+        onConfirm={() => {
+          if (pendingWinner) {
+            executeWinnerSelect(pendingWinner.matchId, pendingWinner.winner);
+          }
+          setPendingWinner(null);
+        }}
+        onCancel={() => setPendingWinner(null)}
+      />
     </div>
   );
 }

@@ -95,6 +95,7 @@ export function Leaderboard({ tippers, matches }: LeaderboardProps) {
         <Trophy className="text-yellow-500" size={20} />
         <h2 className="text-xl font-bold text-gray-800">{matches.length > 0 ? matches[0].season : new Date().getFullYear()} Leaderboard</h2>
       </div>
+      <p className="text-xs text-gray-400 mb-2 md:hidden">Tap a name to see round-by-round scores</p>
 
       {loadingScores ? (
         <div className="text-center py-4 text-gray-500">Loading round scores...</div>
@@ -125,8 +126,8 @@ export function Leaderboard({ tippers, matches }: LeaderboardProps) {
                       #{rank}
                     </span>
                   </td>
-                  <td 
-                    className="p-2 sticky left-10 bg-white z-10 text-xs md:text-sm cursor-pointer hover:text-blue-600 hover:underline"
+                  <td
+                    className="p-2 sticky left-10 bg-white z-10 text-xs md:text-sm cursor-pointer text-blue-600 underline decoration-dotted underline-offset-2 hover:decoration-solid"
                     onClick={() => handleTipperClick(member)}
                   >
                     {member.name}
